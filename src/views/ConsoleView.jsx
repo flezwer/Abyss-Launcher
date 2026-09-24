@@ -1,8 +1,18 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 // useRef still needed for bottomRef and boxRef
 import './ConsoleView.css'
+import { useI18n } from '../i18n'
+
+// Picks the plural form (one / few / many / other) for the current locale
+function plural(t, locale, base, count) {
+  const cat = new Intl.PluralRules(locale).select(count)
+  const key = `${base}${cat[0].toUpperCase()}${cat.slice(1)}`
+  const s = t(key, { count })
+  return s === key ? t(`${base}Other`, { count }) : s
+}
 
 export default function ConsoleView({ logs, setLogs, settings }) {
+  const { t, locale } = useI18n()
   const bottomRef = useRef(null)
   const boxRef = useRef(null)
   const [filterText, setFilterText] = useState('')
@@ -69,7 +79,7 @@ export default function ConsoleView({ logs, setLogs, settings }) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
           </svg>
-          Consola
+          {t('console.title')}
         </h2>
       </div>
       {crash && (
@@ -78,7 +88,7 @@ export default function ConsoleView({ logs, setLogs, settings }) {
             <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
           </svg>
           <div style={{flex:1}}>
-            <strong style={{fontSize:13}}>Último crash: {crash.file}</strong>
+            <strong style={{fontSize:13}}>{t('console.lastCrash', { file: crash.file })}</strong>
             <div style={{fontSize:12,marginTop:2}}>{crash.desc}</div>
             {crash.exception && <div style={{fontSize:11,opacity:.7,fontFamily:'monospace'}}>{crash.exception}</div>}
           </div>
@@ -90,14 +100,14 @@ export default function ConsoleView({ logs, setLogs, settings }) {
       <div className="console-toolbar">
         <input
           className="console-filter"
-          placeholder="Filtrar logs..."
+          placeholder={t('console.filterPlaceholder')}
           value={filterText}
           onChange={e => setFilterText(e.target.value)}
         />
         <button
           className={`btn btn-ghost btn-sm ${autoScroll ? 'active' : ''}`}
           onClick={() => setAutoScroll(s => !s)}
-          title={autoScroll ? 'Auto-scroll activo — clic para pausar' : 'Auto-scroll pausado — clic para reanudar'}
+          title={autoScroll ? t('console.autoScrollOn') : t('console.autoScrollOff')}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}>
             {autoScroll
@@ -105,22 +115,22 @@ export default function ConsoleView({ logs, setLogs, settings }) {
               : <><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></>
             }
           </svg>
-          {autoScroll ? 'Auto' : 'Manual'}
+          {autoScroll ? t('console.auto') : t('console.manual')}
         </button>
         <button
           className="btn btn-ghost btn-sm"
           onClick={() => setLogs?.([])}
         >
-          Limpiar
+          {t('console.clear')}
         </button>
         <button
           className={`btn btn-ghost btn-sm ${wordWrap ? 'active' : ''}`}
           onClick={() => setWordWrap(w => !w)}
-          title="Ajuste de línea"
+          title={t('console.wordWrap')}
         ><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg></button>
         <button
           className="btn btn-ghost btn-sm"
-          title="Exportar log"
+          title={t('console.exportLog')}
           onClick={() => window.eclipse.exportLogs({ gameDir: settings?.gameDir })}
           disabled={!settings?.gameDir}
         >
@@ -131,19 +141,19 @@ export default function ConsoleView({ logs, setLogs, settings }) {
         <button
           className={`btn btn-ghost btn-sm ${searchActive ? 'active' : ''}`}
           onClick={() => setSearchActive(s => !s)}
-          title="Buscar (Ctrl+F)"
+          title={t('console.search')}
         >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
         </button>
-        <span className="console-count">{filteredLines.length} líneas</span>
+        <span className="console-count">{plural(t, locale, 'console.lines', filteredLines.length)}</span>
       </div>
       {searchActive && (
         <div className="console-search-bar">
           <input
             autoFocus
-            placeholder="Buscar en consola..."
+            placeholder={t('console.searchPlaceholder')}
             value={searchQuery}
             onChange={e => { setSearchQuery(e.target.value); setSearchIdx(0) }}
             onKeyDown={e => {
@@ -165,7 +175,7 @@ export default function ConsoleView({ logs, setLogs, settings }) {
       <div className="console-box" ref={boxRef} style={wordWrap ? {} : { whiteSpace: 'pre', overflowX: 'auto' }}>
         {filteredLines.length === 0 && (
           <p className="console-empty">
-            {filterText ? 'Sin coincidencias.' : 'Aquí aparecerá el output del juego cuando lo lances.'}
+            {filterText ? t('console.noMatches') : t('console.empty')}
           </p>
         )}
         {filteredLines.map((line, i) => (

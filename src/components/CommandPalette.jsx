@@ -1,18 +1,38 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './CommandPalette.css'
+import { useT } from '../i18n'
 
+// `hint` values are internal ids (also saved in recent commands); their visible text comes from HINT_LABELS.
 const NAV_COMMANDS = [
-  { id: 'nav-home',      label: 'Ir a Inicio',      hint: 'nav', action: 'nav', target: 'home' },
-  { id: 'nav-mods',      label: 'Ir a Mods',         hint: 'nav', action: 'nav', target: 'mods' },
-  { id: 'nav-accounts',  label: 'Ir a Cuentas',      hint: 'nav', action: 'nav', target: 'accounts' },
-  { id: 'nav-settings',  label: 'Ir a Ajustes',      hint: 'nav', action: 'nav', target: 'settings' },
-  { id: 'nav-console',   label: 'Ir a Consola',      hint: 'nav', action: 'nav', target: 'console' },
-  { id: 'nav-servers',   label: 'Ir a Servidores',   hint: 'nav', action: 'nav', target: 'servers' },
-  { id: 'nav-worlds',    label: 'Ir a Mundos',       hint: 'nav', action: 'nav', target: 'worlds' },
-  { id: 'nav-stats',     label: 'Ir a Estadísticas', hint: 'nav', action: 'nav', target: 'stats' },
-  { id: 'action-launch', label: 'Lanzar Minecraft',  hint: 'acción', action: 'launch' },
-  { id: 'action-theme-dark',  label: 'Tema oscuro',  hint: 'tema', action: 'theme', target: 'dark' },
-  { id: 'action-theme-light', label: 'Tema claro',   hint: 'tema', action: 'theme', target: 'light' },
+  { id: 'nav-home',      labelKey: 'goHome',     hint: 'nav', action: 'nav', target: 'home' },
+  { id: 'nav-mods',      labelKey: 'goMods',     hint: 'nav', action: 'nav', target: 'mods' },
+  { id: 'nav-accounts',  labelKey: 'goAccounts', hint: 'nav', action: 'nav', target: 'accounts' },
+  { id: 'nav-settings',  labelKey: 'goSettings', hint: 'nav', action: 'nav', target: 'settings' },
+  { id: 'nav-console',   labelKey: 'goConsole',  hint: 'nav', action: 'nav', target: 'console' },
+  { id: 'nav-servers',   labelKey: 'goServers',  hint: 'nav', action: 'nav', target: 'servers' },
+  { id: 'nav-worlds',    labelKey: 'goWorlds',   hint: 'nav', action: 'nav', target: 'worlds' },
+  { id: 'nav-stats',     labelKey: 'goStats',    hint: 'nav', action: 'nav', target: 'stats' },
+  { id: 'action-launch', labelKey: 'launch',     hint: 'acción', action: 'launch' },
+  { id: 'action-theme-dark',  labelKey: 'themeDark',  hint: 'tema', action: 'theme', target: 'dark' },
+  { id: 'action-theme-light', labelKey: 'themeLight', hint: 'tema', action: 'theme', target: 'light' },
+]
+
+const HINT_LABELS = {
+  nav: 'hintNav',
+  acción: 'hintAction',
+  tema: 'hintTheme',
+  instancia: 'hintInstance',
+  versión: 'hintVersion',
+  mod: 'hintMod',
+}
+
+const GROUPS = [
+  { hint: 'nav',       labelKey: 'groupNav' },
+  { hint: 'instancia', labelKey: 'groupInstances' },
+  { hint: 'acción',    labelKey: 'groupActions' },
+  { hint: 'versión',   labelKey: 'groupVersions' },
+  { hint: 'mod',       labelKey: 'groupMods' },
+  { hint: 'tema',      labelKey: 'groupThemes' },
 ]
 
 const HINT_ICONS = {
@@ -62,6 +82,7 @@ function saveRecent(cmd) {
 }
 
 export default function CommandPalette({ open, onClose, setActiveView, instances, onLaunch, setTheme }) {
+  const t = useT()
   const [query, setQuery] = useState('')
   const inputRef = useRef(null)
   const [selected, setSelected] = useState(0)
@@ -103,28 +124,21 @@ export default function CommandPalette({ open, onClose, setActiveView, instances
     target: inst,
   }))
 
-  const all = [...NAV_COMMANDS, ...instanceCmds, ...dynCmds]
+  const navCmds = NAV_COMMANDS.map(c => ({ ...c, label: t(`palette.${c.labelKey}`) }))
+  // Recent built-in commands show their label in the current language
+  const recentList = recentCmds.map(r => navCmds.find(c => c.id === r.id) || r)
+
+  const all = [...navCmds, ...instanceCmds, ...dynCmds]
   const q = query.toLowerCase().trim()
   const filtered = q ? all.filter(c => c.label.toLowerCase().includes(q)) : all
 
   // Build grouped list
+  const byHint = GROUPS.map(g => ({ label: t(`palette.${g.labelKey}`), items: filtered.filter(c => c.hint === g.hint) }))
   const grouped = q
-    ? [
-        { label: 'Navegación',  items: filtered.filter(c => c.hint === 'nav') },
-        { label: 'Instancias',  items: filtered.filter(c => c.hint === 'instancia') },
-        { label: 'Acciones',    items: filtered.filter(c => c.hint === 'acción') },
-        { label: 'Versiones',   items: filtered.filter(c => c.hint === 'versión') },
-        { label: 'Mods',        items: filtered.filter(c => c.hint === 'mod') },
-        { label: 'Temas',       items: filtered.filter(c => c.hint === 'tema') },
-      ].filter(g => g.items.length > 0)
+    ? byHint.filter(g => g.items.length > 0)
     : [
-        ...(recentCmds.length > 0 ? [{ label: 'Recientes', items: recentCmds }] : []),
-        { label: 'Navegación',  items: filtered.filter(c => c.hint === 'nav') },
-        { label: 'Instancias',  items: filtered.filter(c => c.hint === 'instancia') },
-        { label: 'Acciones',    items: filtered.filter(c => c.hint === 'acción') },
-        { label: 'Versiones',   items: filtered.filter(c => c.hint === 'versión') },
-        { label: 'Mods',        items: filtered.filter(c => c.hint === 'mod') },
-        { label: 'Temas',       items: filtered.filter(c => c.hint === 'tema') },
+        ...(recentList.length > 0 ? [{ label: t('palette.groupRecent'), items: recentList }] : []),
+        ...byHint,
       ].filter(g => g.items.length > 0)
 
   // Flat list of commands (for keyboard nav, skipping headers)
@@ -167,14 +181,14 @@ export default function CommandPalette({ open, onClose, setActiveView, instances
           <input
             ref={inputRef}
             className="cp-input"
-            placeholder="Buscar comando, instancia, versión, mod..."
+            placeholder={t('palette.placeholder')}
             value={query}
             onChange={e => { setQuery(e.target.value); setSelected(0) }}
           />
           <kbd className="cp-esc">ESC</kbd>
         </div>
         <div className="cp-list">
-          {flatCmds.length === 0 && q && <div className="cp-empty">Sin resultados para "{query}"</div>}
+          {flatCmds.length === 0 && q && <div className="cp-empty">{t('palette.noResults', { query })}</div>}
           {grouped.map(group => {
             const groupStart = flatIdx
             flatIdx += group.items.length
@@ -194,7 +208,7 @@ export default function CommandPalette({ open, onClose, setActiveView, instances
                       {cmd.hint && (
                         <span className="cp-hint">
                           {HINT_ICONS[cmd.hint]}
-                          {cmd.hint}
+                          {HINT_LABELS[cmd.hint] ? t(`palette.${HINT_LABELS[cmd.hint]}`) : cmd.hint}
                         </span>
                       )}
                     </div>

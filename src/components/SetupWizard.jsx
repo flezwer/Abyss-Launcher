@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import './SetupWizard.css'
+import { useI18n, getLang } from '../i18n'
 
 /* ── Banderas SVG ─────────────────────────────────────────────────────────── */
 const FlagSpain = () => (
@@ -64,7 +65,7 @@ const FlagItaly = () => (
 
 const LANGUAGES = [
   { code: 'es-ES', name: 'Español', country: 'España',      Flag: FlagSpain   },
-  { code: 'es-MX', name: 'Español', country: 'México',      Flag: FlagMexico  },
+  { code: 'es-MX', name: 'Español', country: 'Latinoamérica', Flag: FlagMexico  },
   { code: 'en',    name: 'English', country: 'English',     Flag: FlagUSA     },
   { code: 'ru',    name: 'Русский', country: 'Россия',      Flag: FlagRussia  },
   { code: 'de',    name: 'Deutsch', country: 'Deutschland', Flag: FlagGermany },
@@ -73,8 +74,11 @@ const LANGUAGES = [
 ]
 
 export default function SetupWizard({ onComplete, saveSettings, settings }) {
+  const { t, setLang: applyLang } = useI18n()
   const [step, setStep]         = useState(0)
   const [lang, setLang]         = useState(null)
+  // Picking a flag switches the whole launcher right away, so the rest of the wizard reads in that language
+  const chooseLang = (code) => { setLang(code); applyLang(code) }
   const [username, setUsername] = useState('')
   const [javaPath, setJavaPath] = useState(settings?.javaPath || 'java')
   const [detecting, setDetecting] = useState(false)
@@ -83,8 +87,8 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
   const steps = [
     /* 0 — Idioma */
     {
-      title: 'Choose your language',
-      subtitle: 'Elige tu idioma / Select your language',
+      title: lang ? t('wizard.langTitle') : 'Choose your language',
+      subtitle: lang ? t('wizard.langSubtitle') : 'Elige tu idioma · Scegli la lingua · Choisissez votre langue · Sprache wählen · Выбери язык',
       wide: true,
       content: (
         <div className="lang-grid">
@@ -93,7 +97,7 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
               key={code}
               className={`lang-card ${lang === code ? 'selected' : ''}`}
               style={{ animationDelay: `${i * 60}ms` }}
-              onClick={() => setLang(code)}
+              onClick={() => chooseLang(code)}
             >
               <div className="flag-wrap"><Flag /></div>
               <div className="lang-label">
@@ -114,8 +118,8 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
     },
     /* 1 — Bienvenida */
     {
-      title: 'Bienvenido a Eclipse',
-      subtitle: 'El launcher de Minecraft más limpio. Configuremos todo en 3 pasos.',
+      title: t('wizard.welcomeTitle'),
+      subtitle: t('wizard.welcomeSubtitle'),
       content: (
         <div className="wizard-welcome">
           <div className="wizard-logo">
@@ -124,17 +128,17 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
               <circle cx="12" cy="12" r="10" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>
             </svg>
           </div>
-          <p>Eclipse te permite jugar Minecraft, gestionar mods, shaders y más — todo en un lugar.</p>
+          <p>{t('wizard.welcomeBody')}</p>
         </div>
       ),
     },
     /* 2 — Cuenta */
     {
-      title: 'Tu primera cuenta',
-      subtitle: 'Añade un nombre de usuario para empezar a jugar.',
+      title: t('wizard.accountTitle'),
+      subtitle: t('wizard.accountSubtitle'),
       content: (
         <div className="wizard-field">
-          <label>Nombre de usuario (offline)</label>
+          <label>{t('wizard.accountLabel')}</label>
           <input
             autoFocus
             placeholder="Steve"
@@ -142,21 +146,21 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
             onChange={e => setUsername(e.target.value.slice(0, 16))}
             maxLength={16}
           />
-          <span className="wizard-hint">Puedes añadir más cuentas en la sección Cuentas.</span>
+          <span className="wizard-hint">{t('wizard.accountHint')}</span>
         </div>
       ),
     },
     /* 3 — Java */
     {
-      title: 'Verificar Java',
-      subtitle: 'Minecraft necesita Java para funcionar.',
+      title: t('wizard.javaTitle'),
+      subtitle: t('wizard.javaSubtitle'),
       content: (
         <div className="wizard-java">
           <div className={`wizard-java-status ${detected ? 'ok' : ''}`}>
             {detected ? (
-              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>Java encontrado</>
+              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><polyline points="20 6 9 17 4 12"/></svg>{t('wizard.javaFound')}</>
             ) : (
-              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Java no verificado</>
+              <><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>{t('wizard.javaNotChecked')}</>
             )}
           </div>
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
@@ -166,13 +170,13 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
               if (r.found) { setJavaPath(r.path); setDetected(true) }
               setDetecting(false)
             }}>
-              {detecting ? 'Detectando...' : 'Detectar Java'}
+              {detecting ? t('wizard.detecting') : t('wizard.detect')}
             </button>
             <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.openExternal('https://adoptium.net/temurin/releases/?version=22')}>
-              Descargar Java
+              {t('wizard.download')}
             </button>
           </div>
-          <span className="wizard-hint">Si tienes Java instalado, haz clic en Detectar. Si no, descárgalo.</span>
+          <span className="wizard-hint">{t('wizard.javaHint')}</span>
         </div>
       ),
     },
@@ -185,7 +189,7 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
       await window.eclipse.saveAccounts([...existing, acc])
     }
     if (step === 3) {
-      await saveSettings({ ...settings, javaPath, language: lang || 'es-ES' })
+      await saveSettings({ ...settings, javaPath, language: lang || getLang() })
       onComplete()
       return
     }
@@ -213,13 +217,13 @@ export default function SetupWizard({ onComplete, saveSettings, settings }) {
         </div>
         <div className="wizard-footer">
           {step > 0 && (
-            <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><polyline points="15 18 9 12 15 6"/></svg>Atrás</button>
+            <button className="btn btn-ghost" onClick={() => setStep(s => s - 1)}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><polyline points="15 18 9 12 15 6"/></svg>{t('wizard.back')}</button>
           )}
           <button className="btn btn-primary" disabled={!canNext} onClick={handleNext}>
-            {step === steps.length - 1 ? '¡Empezar!' : <>Siguiente <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle'}}><polyline points="9 18 15 12 9 6"/></svg></>}
+            {step === steps.length - 1 ? t('wizard.start') : <>{t('wizard.next')} <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle'}}><polyline points="9 18 15 12 9 6"/></svg></>}
           </button>
           <button className="btn btn-ghost" style={{ marginLeft: 'auto', fontSize: 12 }} onClick={onComplete}>
-            Omitir
+            {t('wizard.skip')}
           </button>
         </div>
       </div>

@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react'
 import './WorldsView.css'
+import { useI18n } from '../i18n'
 
 export default function WorldsView({ settings }) {
+  const { t, locale } = useI18n()
   const [worlds, setWorlds] = useState([])
   const [loading, setLoading] = useState(false)
   const [backingUp, setBackingUp] = useState({})
@@ -37,7 +39,7 @@ export default function WorldsView({ settings }) {
 
   const fmt = (iso) => {
     const d = new Date(iso)
-    return d.toLocaleDateString('es-ES', { day: '2-digit', month: 'short', year: 'numeric' })
+    return d.toLocaleDateString(locale, { day: '2-digit', month: 'short', year: 'numeric' })
   }
 
   return (
@@ -47,9 +49,9 @@ export default function WorldsView({ settings }) {
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          Mundos
+          {t('worlds.title')}
         </h2>
-        <button className="btn btn-ghost btn-sm" onClick={load}>↻ Actualizar</button>
+        <button className="btn btn-ghost btn-sm" onClick={load}>↻ {t('worlds.refresh')}</button>
       </div>
 
       {loading && <div className="worlds-loading"><span className="big-spinner"/></div>}
@@ -59,7 +61,7 @@ export default function WorldsView({ settings }) {
           <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.35}}>
             <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
           </svg>
-          <p>No hay mundos en {gameDir}/saves</p>
+          <p>{t('worlds.empty', { path: `${gameDir}/saves` })}</p>
         </div>
       )}
 
@@ -78,11 +80,11 @@ export default function WorldsView({ settings }) {
               </div>
               <div className="world-info bin-label">
                 <div className="world-name">{world.name}</div>
-                <div className="world-date">Último acceso: {fmt(world.lastModified)}</div>
+                <div className="world-date">{t('worlds.lastPlayed', { date: fmt(world.lastModified) })}</div>
               </div>
               <div className="world-actions">
-                <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.openWorld({ worldPath: world.path })} title="Abrir carpeta"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
-                <button className="btn btn-ghost btn-sm" onClick={() => backup(world)} disabled={backingUp[world.name]} title="Backup">
+                <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.openWorld({ worldPath: world.path })} title={t('worlds.openFolder')}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
+                <button className="btn btn-ghost btn-sm" onClick={() => backup(world)} disabled={backingUp[world.name]} title={t('worlds.backup')}>
                   {backingUp[world.name] ? <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="spin"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg> : <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>}
                 </button>
                 <button className={`bin-btn ${isEating ? 'bin-btn--chomping' : ''}`} disabled={!!deletingWorld[world.name]} onClick={() => !deletingWorld[world.name] && deleteWorld(world)}>

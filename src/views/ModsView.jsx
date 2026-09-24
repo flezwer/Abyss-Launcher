@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import './ModsView.css'
 import LiquidButton from '../components/LiquidButton'
+import { useT } from '../i18n'
 
 // ── Pagination component (module-level to avoid remount on every render) ──────
 function Pagination({ total, cur, onChange }) {
@@ -65,11 +66,11 @@ const IconScreenshots = () => (
 )
 
 const CATEGORIES = [
-  { id: 'mods',          label: 'Mods',      Icon: IconMods         },
-  { id: 'modpacks',      label: 'Modpacks',  Icon: IconModpacks     },
-  { id: 'shaders',       label: 'Shaders',   Icon: IconShaders      },
-  { id: 'resourcepacks', label: 'Res. Packs',Icon: IconRP           },
-  { id: 'screenshots',   label: 'Capturas',  Icon: IconScreenshots  },
+  { id: 'mods',          labelKey: 'mods.catMods',          Icon: IconMods         },
+  { id: 'modpacks',      labelKey: 'mods.catModpacks',      Icon: IconModpacks     },
+  { id: 'shaders',       labelKey: 'mods.catShaders',       Icon: IconShaders      },
+  { id: 'resourcepacks', labelKey: 'mods.catResourcepacks', Icon: IconRP           },
+  { id: 'screenshots',   labelKey: 'mods.catScreenshots',   Icon: IconScreenshots  },
 ]
 
 const PER_PAGE_OPTIONS = [12, 24, 48, 100]
@@ -126,6 +127,7 @@ const IcLayers2 = ({size=14}) => (
 )
 
 export default function ModsView({ settings, addToQueue, updateQueue, notify }) {
+  const t = useT()
   const [platform, setPlatform] = useState('modrinth')
   const [tab, setTab]           = useState('search')
   const [category, setCategory] = useState('mods')
@@ -580,9 +582,9 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
     window.eclipse.offModpackProgress?.()   // #fix: cleanup after install
     setMpInstalling(false)
     if (res.ok) {
-      notify?.({ message: `Modpack instalado: ${res.installed}/${res.total} mods`, type: 'success' })
+      notify?.({ message: t('mods.modpackInstalled', { installed: res.installed, total: res.total }), type: 'success' })
     } else {
-      notify?.({ message: 'Error: ' + res.error, type: 'error' })
+      notify?.({ message: t('mods.errorGeneric', { error: res.error }), type: 'error' })
     }
   }
 
@@ -613,7 +615,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
   }
 
   // ── Componente: grid de populares ─────────────────────────────────────────
-  const PopularGrid = ({ items, loading, onInstall, installingMap, onOpen, label = 'populares', source = 'Modrinth', total = 0, page = 1, perPageCount = 100, onPageChange }) => {
+  const PopularGrid = ({ items, loading, onInstall, installingMap, onOpen, label = t('mods.popularDefaultLabel'), source = 'Modrinth', total = 0, page = 1, perPageCount = 100, onPageChange }) => {
     const totalPages = Math.ceil(total / perPageCount)
     return (
     <div className="popular-section">
@@ -622,7 +624,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:6}}>
             <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>
           </svg>
-          Más descargados
+          {t('mods.mostDownloaded')}
         </span>
         <span className="popular-sub">{fmtNum(total)} {label} · {source}</span>
       </div>
@@ -651,7 +653,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
             <button
               className={`pop-dl-btn${installingMap?.[hit.project_id] ? ' pop-dl-btn--loading' : ''}`}
               onClick={e => { e.stopPropagation(); onInstall ? onInstall(hit) : (onOpen ? onOpen(hit) : openMod({ ...hit, _src: 'modrinth' })) }}
-              title="Ver mod"
+              title={t('mods.viewMod')}
             >
               <span className="pop-dl-arrow">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -674,15 +676,15 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
       {/* ── Top bar: categoria + platform ── */}
       <div className="mods-topbar">
         <nav className="mods-sidenav">
-          <div className="mods-sidenav-label">Contenido</div>
-          {CATEGORIES.map(({ id, label, Icon }) => (
+          <div className="mods-sidenav-label">{t('mods.sidebarLabel')}</div>
+          {CATEGORIES.map(({ id, labelKey, Icon }) => (
             <button
               key={id}
               className={`mods-navbtn ${category === id ? 'active' : ''}`}
               onClick={() => setCategory(id)}
             >
               <span className="mods-navbtn-icon"><Icon /></span>
-              <span className="mods-navbtn-label">{label}</span>
+              <span className="mods-navbtn-label">{t(labelKey)}</span>
             </button>
           ))}
         </nav>
@@ -698,7 +700,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
                     </svg>
-                    Mods
+                    {t('mods.titleMods')}
                   </h2>
                   <div className="platform-toggle">
                     <button className={`platform-btn ${platform==='modrinth'?'active':''}`} onClick={()=>{setPlatform('modrinth');setResults([])}}>
@@ -720,29 +722,29 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                 <div className="mods-tabs">
                   <button className={`tab-btn ${tab==='search'?'active':''}`} onClick={()=>setTab('search')}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Buscar
+                    {t('mods.tabSearch')}
                   </button>
                   <button className={`tab-btn ${tab==='installed'?'active':''}`} onClick={()=>setTab('installed')}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    Instalados
+                    {t('mods.tabInstalled')}
                   </button>
                 </div>
                 {tab==='installed' && <button className="btn btn-ghost btn-sm" onClick={()=>window.eclipse.openModsFolder({gameDir})}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-                  Carpeta
+                  {t('mods.openFolder')}
                 </button>}
               </div>
 
               {tab === 'search' && (
                 <div className="mods-search-panel">
                   <div className="mods-filters">
-                    <input className="mods-search-input" placeholder={`Buscar en ${platform==='modrinth'?'Modrinth':'CurseForge'}...`} value={query} onChange={e=>setQuery(e.target.value)} autoFocus />
-                    <input placeholder="Versión MC" value={mcVersion} onChange={e=>setMcVersion(e.target.value)} style={{width:110}} />
+                    <input className="mods-search-input" placeholder={t('mods.searchIn', { platform: platform==='modrinth'?'Modrinth':'CurseForge' })} value={query} onChange={e=>setQuery(e.target.value)} autoFocus />
+                    <input placeholder={t('mods.mcVersionPlaceholder')} value={mcVersion} onChange={e=>setMcVersion(e.target.value)} style={{width:110}} />
                     <select value={loader} onChange={e=>setLoader(e.target.value)} style={{width:100}}>
-                      {LOADERS.map(l=><option key={l} value={l}>{l.charAt(0).toUpperCase()+l.slice(1)}</option>)}
+                      {LOADERS.map(l=><option key={l} value={l}>{l === 'any' ? t('mods.loaderAny') : l.charAt(0).toUpperCase()+l.slice(1)}</option>)}
                     </select>
                     <div className="per-page-ctrl">
-                      <span className="per-page-label">Ver</span>
+                      <span className="per-page-label">{t('mods.perPageLabel')}</span>
                       <select value={perPage} onChange={e=>{
                         const n = Number(e.target.value)
                         setPerPage(n); setPage(1)
@@ -774,7 +776,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       {activeCategories.length > 0 && (
                         <button className="cat-chip cat-chip-clear" onClick={() => setActiveCategories([])}>
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                          {' '}Limpiar
+                          {' '}{t('mods.clearFilters')}
                         </button>
                       )}
                     </div>
@@ -785,23 +787,23 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:5}}>
                         <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
                       </svg>
-                      {cfError}{!cfApiKey && ' — Añade tu API key en Ajustes'}
+                      {cfError}{!cfApiKey && t('mods.cfApiKeyHint')}
                     </div>
                   )}
 
-                  {searching && <div className="mods-loading"><span className="big-spinner"/><span>Buscando...</span></div>}
+                  {searching && <div className="mods-loading"><span className="big-spinner"/><span>{t('mods.searching')}</span></div>}
 
                   {!searching && !query.trim() && (
-                    <PopularGrid items={popular} loading={loadingPopular} onOpen={mod => openMod({ ...mod, _src: 'modrinth' })} label="mods" source={platform === 'curseforge' ? 'CurseForge' : 'Modrinth'} total={popularTotal} page={popularPage} perPageCount={POPULAR_PER_PAGE} onPageChange={p => loadPopularMods(p)} />
+                    <PopularGrid items={popular} loading={loadingPopular} onOpen={mod => openMod({ ...mod, _src: 'modrinth' })} label={t('mods.labelMods')} source={platform === 'curseforge' ? 'CurseForge' : 'Modrinth'} total={popularTotal} page={popularPage} perPageCount={POPULAR_PER_PAGE} onPageChange={p => loadPopularMods(p)} />
                   )}
 
                   {!searching && results.length === 0 && query.trim() && !cfError && (
-                    <div className="mods-empty">Sin resultados para "{query}"</div>
+                    <div className="mods-empty">{t('mods.noResults', { query })}</div>
                   )}
 
                   {results.length > 0 && (
                     <div className="results-meta">
-                      {totalHits > 0 && <span>{fmtNum(totalHits)} resultados · página {page} de {totalPages}</span>}
+                      {totalHits > 0 && <span>{t('mods.resultsMeta', { total: fmtNum(totalHits), page, pages: totalPages })}</span>}
                     </div>
                   )}
 
@@ -823,7 +825,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                             </span>
                           </div>
                         </div>
-                        <button className="btn btn-primary btn-sm">Ver ›</button>
+                        <button className="btn btn-primary btn-sm">{t('mods.view')}</button>
                       </div>
                     ))}
                   </div>
@@ -859,10 +861,10 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       window.eclipse.offModpackProgress?.()
                       setMrpackInstalling(false)
                       if (res?.ok) {
-                        notify?.({ message: `Modpack instalado: ${res.installed}/${res.total} mods`, type: 'success' })
+                        notify?.({ message: t('mods.modpackInstalled', { installed: res.installed, total: res.total }), type: 'success' })
                         loadInstalled()
                       } else {
-                        notify?.({ message: 'Error instalando modpack: ' + (res?.error || 'desconocido'), type: 'error' })
+                        notify?.({ message: t('mods.modpackInstallError', { error: res?.error || t('mods.unknownError') }), type: 'error' })
                       }
                     } else if (jarFiles.length && gameDir) {
                       for (const f of jarFiles) {
@@ -877,28 +879,28 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                       </svg>
-                      Suelta el .mrpack para instalar
+                      {t('mods.dropMrpack')}
                     </div>
                   )}
                   {mrpackInstalling && (
                     <div className="mrpack-installing-bar">
                       <span className="big-spinner" style={{width:14,height:14,borderWidth:2}}/>
-                      Instalando modpack... {mrpackProgress.done}/{mrpackProgress.total} mods
+                      {t('mods.installingModpackProgress', { done: mrpackProgress.done, total: mrpackProgress.total })}
                     </div>
                   )}
                   {/* Profile selector */}
                   <div className="profile-bar">
                     <button className={`profile-chip ${!activeProfile ? 'active' : ''}`} onClick={() => setActiveProfile(null)}>
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                      Todos ({installed.length})
+                      {t('mods.allProfiles', { count: installed.length })}
                     </button>
                     {profiles.map(p => (
                       <div key={p.id} style={{display:'flex',gap:2,alignItems:'center'}}>
                         <button className={`profile-chip ${activeProfile === p.id ? 'active' : ''}`} onClick={() => setActiveProfile(p.id)}>
                           <IcLayers2 /> {p.name} ({(p.mods || []).length})
                         </button>
-                        <button className="btn btn-ghost btn-sm" onClick={() => applyProfile(p)} title={`Aplicar perfil: ${(p.mods||[]).length} mods`}><IcPlay size={11} /></button>
-                        <button className="btn btn-ghost btn-sm" title="Eliminar perfil" style={{color:'#f87171'}} onClick={async () => {
+                        <button className="btn btn-ghost btn-sm" onClick={() => applyProfile(p)} title={t('mods.applyProfile', { count: (p.mods||[]).length })}><IcPlay size={11} /></button>
+                        <button className="btn btn-ghost btn-sm" title={t('mods.deleteProfile')} style={{color:'#f87171'}} onClick={async () => {
                           const next = profiles.filter(pr => pr.id !== p.id)
                           setProfiles(next)
                           if (activeProfile === p.id) setActiveProfile(null)
@@ -908,7 +910,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                     ))}
                     {showNewProfile ? (
                       <div style={{display:'flex',gap:6,alignItems:'center'}}>
-                        <input autoFocus placeholder="Nombre del perfil" value={newProfileName} onChange={e=>setNewProfileName(e.target.value)}
+                        <input autoFocus placeholder={t('mods.profileNamePlaceholder')} value={newProfileName} onChange={e=>setNewProfileName(e.target.value)}
                           onKeyDown={async e => {
                             if (e.key === 'Enter' && newProfileName.trim()) {
                               const p = { id: Date.now().toString(), name: newProfileName.trim(), mods: [] }
@@ -924,9 +926,9 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                         <button className="btn btn-ghost btn-sm" onClick={() => { setShowNewProfile(false); setNewProfileName('') }}><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
                       </div>
                     ) : (
-                      <button className="btn btn-ghost btn-sm" onClick={() => setShowNewProfile(true)}>+ Perfil</button>
+                      <button className="btn btn-ghost btn-sm" onClick={() => setShowNewProfile(true)}>{t('mods.addProfile')}</button>
                     )}
-                    <input className="tag-input" style={{width:110,fontSize:12}} placeholder="Nuevo perfil..." value={profileName} onChange={e => setProfileName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveProfile()} />
+                    <input className="tag-input" style={{width:110,fontSize:12}} placeholder={t('mods.newProfilePlaceholder')} value={profileName} onChange={e => setProfileName(e.target.value)} onKeyDown={e => e.key === 'Enter' && saveProfile()} />
                     <button className="btn btn-ghost btn-sm" onClick={saveProfile}><IcSave2 /></button>
                     <button className="btn btn-ghost btn-sm" disabled={checkingUpdates} onClick={async () => {
                       setCheckingUpdates(true)
@@ -939,7 +941,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       if (count > 0) try { localStorage.setItem('eclipse-mod-updates', String(count)) } catch {}
                       setCheckingUpdates(false)
                     }}>
-                      {checkingUpdates ? <><span className="big-spinner" style={{width:12,height:12,borderWidth:2}}/> Verificando...</> : '↑ Buscar actualizaciones'}
+                      {checkingUpdates ? <><span className="big-spinner" style={{width:12,height:12,borderWidth:2}}/> {t('mods.checking')}</> : t('mods.checkUpdates')}
                     </button>
                   </div>
 
@@ -947,13 +949,13 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                     <button
                       className={`btn btn-ghost btn-sm ${showFavsOnly ? 'active' : ''}`}
                       onClick={() => setShowFavsOnly(p => !p)}
-                    >⭐ Solo favoritos</button>
+                    >{t('mods.favoritesOnly')}</button>
                   </div>
                   <div style={{display:'flex',gap:6,marginBottom:8}}>
-                    <input className="console-filter" placeholder="Filtrar mods instalados..." value={modSearch} onChange={e => setModSearch(e.target.value)} />
-                    <select className="mod-sort-select" value={modSort} onChange={e => setModSort(e.target.value)} title="Ordenar">
-                      <option value="name">A–Z</option>
-                      <option value="enabled">Activos primero</option>
+                    <input className="console-filter" placeholder={t('mods.filterInstalledPlaceholder')} value={modSearch} onChange={e => setModSearch(e.target.value)} />
+                    <select className="mod-sort-select" value={modSort} onChange={e => setModSort(e.target.value)} title={t('mods.sortTitle')}>
+                      <option value="name">{t('mods.sortAZ')}</option>
+                      <option value="enabled">{t('mods.sortEnabledFirst')}</option>
                     </select>
                     <button
                       className="btn btn-ghost btn-sm"
@@ -965,29 +967,29 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                           (!modSearch.trim() || m.file.toLowerCase().includes(modSearch.toLowerCase()))
                         )
                         if (!visible.length) return
-                        const label = modSearch.trim() || showFavsOnly ? `${visible.length} mods filtrados` : 'todos los mods'
-                        if (!window.confirm(`¿Eliminar ${label}? Esta acción no se puede deshacer.`)) return
+                        const confirmMsg = modSearch.trim() || showFavsOnly ? t('mods.confirmDeleteFiltered', { count: visible.length }) : t('mods.confirmDeleteAll')
+                        if (!window.confirm(confirmMsg)) return
                         for (const m of visible) {
                           await window.eclipse.deleteMod({ gameDir, file: m.file }).catch(() => {})
                         }
                         loadInstalled()
                       }}
-                      title="Eliminar todos los mods visibles"
+                      title={t('mods.deleteAllTitle')}
                     >
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}>
                         <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/>
                       </svg>
-                      Eliminar todos
+                      {t('mods.deleteAll')}
                     </button>
                   </div>
-                  {loadingInst && <div className="mods-loading"><span className="big-spinner"/><span>Cargando...</span></div>}
+                  {loadingInst && <div className="mods-loading"><span className="big-spinner"/><span>{t('mods.loading')}</span></div>}
                   {!loadingInst && installed.length === 0 && (
                     <div className="mods-empty">
                       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{opacity:.4}}>
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
                       </svg>
-                      <p>No hay mods instalados.</p>
-                      <p style={{fontSize:11,opacity:.5}}>Arrastra archivos .jar aquí para instalarlos</p>
+                      <p>{t('mods.noModsInstalled')}</p>
+                      <p style={{fontSize:11,opacity:.5}}>{t('mods.dragJarHint')}</p>
                     </div>
                   )}
                   <div className="installed-list">
@@ -1008,15 +1010,15 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                             <span className="mod-dot" style={{ background: mod.enabled ? '#22c55e' : '#6b7280' }} />
                             {mod.name.replace(/\.(jar|disabled)$/i, '').replace(/-[\d]+(\.\d+)*(-[a-zA-Z0-9]+)*$/, '')}
                             {updateResults[mod.file]?.hasUpdate && (
-                              <span className="mod-update-badge">Actualización disponible</span>
+                              <span className="mod-update-badge">{t('mods.updateAvailable')}</span>
                             )}
                             <button
                               className={`fav-btn ${favorites.includes(mod.file) ? 'fav-btn--active' : ''}`}
                               onClick={e => { e.stopPropagation(); toggleFav(mod.file) }}
-                              title="Favorito"
+                              title={t('mods.favorite')}
                             >⭐</button>
                           </div>
-                          <div className="installed-status">{mod.enabled?<span className="status-on">● Activo</span>:<span className="status-off">● Desactivado</span>}</div>
+                          <div className="installed-status">{mod.enabled?<span className="status-on">{t('mods.statusEnabled')}</span>:<span className="status-off">{t('mods.statusDisabled')}</span>}</div>
                         </div>
                         <div className="installed-actions">
                           {updateResults[mod.file]?.hasUpdate && (
@@ -1032,17 +1034,17 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                                 loadInstalled()
                               }}
                             >
-                              {updatingMod[mod.file] ? '...' : '↑ Actualizar'}
+                              {updatingMod[mod.file] ? '...' : t('mods.update')}
                             </button>
                           )}
                           {activeProfile && profiles.find(p=>p.id===activeProfile)?.mods?.some(pm=>pm.file===mod.file) && (
-                            <button className="btn btn-ghost btn-sm" title="Quitar del perfil" onClick={async () => {
+                            <button className="btn btn-ghost btn-sm" title={t('mods.removeFromProfile')} onClick={async () => {
                               const next = profiles.map(p => p.id === activeProfile
                                 ? { ...p, mods: (p.mods || []).filter(pm => pm.file !== mod.file) }
                                 : p)
                               setProfiles(next)
                               await window.eclipse.saveProfiles(next)
-                            }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Perfil</button>
+                            }}><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> {t('mods.profile')}</button>
                           )}
                           {activeProfile && !profiles.find(p=>p.id===activeProfile)?.mods?.some(pm=>pm.file===mod.file) && (
                             <button className="btn btn-primary btn-sm" onClick={async () => {
@@ -1051,13 +1053,13 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                                 : p)
                               setProfiles(next)
                               await window.eclipse.saveProfiles(next)
-                            }}>+ Perfil</button>
+                            }}>{t('mods.addProfile')}</button>
                           )}
                           <button className={`btn btn-sm ${mod.enabled?'btn-ghost':'btn-primary'}`} onClick={()=>toggleMod(mod)}>{mod.enabled ? <IcPause2 size={11}/> : <IcPlay size={11}/>}</button>
                           <button
                             className={`bin-btn ${deletingMod[mod.file]==='eating'?'bin-btn--chomping':''}`}
                             onClick={()=>!deletingMod[mod.file]&&deleteMod(mod)}
-                            title="Eliminar"
+                            title={t('mods.delete')}
                             disabled={!!deletingMod[mod.file]}
                           >
                             <span className="bin-icon"><IcTrash /></span>
@@ -1086,26 +1088,26 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
                   </svg>
-                  Shaders
+                  {t('mods.titleShaders')}
                 </h2>
                 <div className="mods-tabs">
                   <button className={`tab-btn ${shaderTab==='search'?'active':''}`} onClick={()=>setShaderTab('search')}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Buscar
+                    {t('mods.tabSearch')}
                   </button>
                   <button className={`tab-btn ${shaderTab==='installed'?'active':''}`} onClick={()=>{setShaderTab('installed');loadShaders()}}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    Instalados
+                    {t('mods.tabInstalled')}
                   </button>
                 </div>
               </div>
               {shaderTab === 'search' && (
                 <div className="mods-search-panel">
                   <div className="mods-filters">
-                    <input className="mods-search-input" placeholder="Buscar shaders..." value={shaderQuery} onChange={e=>setShaderQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchShaders()} />
-                    <button className="btn btn-primary btn-sm" onClick={searchShaders} disabled={shaderSearching}>{shaderSearching?'...':'Buscar'}</button>
+                    <input className="mods-search-input" placeholder={t('mods.searchShadersPlaceholder')} value={shaderQuery} onChange={e=>setShaderQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchShaders()} />
+                    <button className="btn btn-primary btn-sm" onClick={searchShaders} disabled={shaderSearching}>{shaderSearching?'...':t('mods.search')}</button>
                   </div>
-                  {!shaderQuery.trim() && <PopularGrid items={shaderPopular} label="shaders" onInstall={installShader} installingMap={installingShader} />}
+                  {!shaderQuery.trim() && <PopularGrid items={shaderPopular} label={t('mods.labelShaders')} onInstall={installShader} installingMap={installingShader} />}
                   <div className="mods-list">
                     {shaderResults.map(hit => (
                       <div key={hit.project_id} className="mod-card" onClick={()=>openMod({...hit,_src:'modrinth'})}>
@@ -1115,7 +1117,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                           <div className="mod-desc">{hit.description}</div>
                           <div className="mod-meta"><span className="mod-tag"><IcDl />{fmtNum(hit.downloads)}</span></div>
                         </div>
-                        <button className="btn btn-primary btn-sm" disabled={installingShader[hit.project_id]} onClick={e=>{e.stopPropagation();installShader(hit)}}>{installingShader[hit.project_id]?'...':'Instalar'}</button>
+                        <button className="btn btn-primary btn-sm" disabled={installingShader[hit.project_id]} onClick={e=>{e.stopPropagation();installShader(hit)}}>{installingShader[hit.project_id]?'...':t('mods.install')}</button>
                       </div>
                     ))}
                   </div>
@@ -1123,7 +1125,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
               )}
               {shaderTab === 'installed' && (
                 <div className="installed-panel">
-                  {installedShaders.length===0&&<div className="mods-empty"><IcStar2 size={36} /><p>No hay shaders instalados</p></div>}
+                  {installedShaders.length===0&&<div className="mods-empty"><IcStar2 size={36} /><p>{t('mods.noShadersInstalled')}</p></div>}
                   <div className="installed-list">
                     {installedShaders.map(s=>(
                       <div key={s.file} className={`installed-card ${deletingShader[s.file]==='eating'?'bin-eating':''} ${deletingShader[s.file]==='collapsing'?'bin-collapsing':''}`}>
@@ -1153,26 +1155,26 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>
                   </svg>
-                  Resource Packs
+                  {t('mods.titleResourcePacks')}
                 </h2>
                 <div className="mods-tabs">
                   <button className={`tab-btn ${rpTab==='search'?'active':''}`} onClick={()=>setRpTab('search')}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-                    Buscar
+                    {t('mods.tabSearch')}
                   </button>
                   <button className={`tab-btn ${rpTab==='installed'?'active':''}`} onClick={()=>{setRpTab('installed');loadRPs()}}>
                     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
-                    Instalados
+                    {t('mods.tabInstalled')}
                   </button>
                 </div>
               </div>
               {rpTab === 'search' && (
                 <div className="mods-search-panel">
                   <div className="mods-filters">
-                    <input className="mods-search-input" placeholder="Buscar resource packs..." value={rpQuery} onChange={e=>setRpQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchRPs()} />
-                    <button className="btn btn-primary btn-sm" onClick={searchRPs} disabled={rpSearching}>{rpSearching?'...':'Buscar'}</button>
+                    <input className="mods-search-input" placeholder={t('mods.searchRPsPlaceholder')} value={rpQuery} onChange={e=>setRpQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchRPs()} />
+                    <button className="btn btn-primary btn-sm" onClick={searchRPs} disabled={rpSearching}>{rpSearching?'...':t('mods.search')}</button>
                   </div>
-                  {!rpQuery.trim() && <PopularGrid items={rpPopular} label="resource packs" onInstall={installRP} installingMap={installingRP} />}
+                  {!rpQuery.trim() && <PopularGrid items={rpPopular} label={t('mods.labelResourcePacks')} onInstall={installRP} installingMap={installingRP} />}
                   <div className="mods-list">
                     {rpResults.map(hit=>(
                       <div key={hit.project_id} className="mod-card">
@@ -1182,7 +1184,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                           <div className="mod-desc">{hit.description}</div>
                           <div className="mod-meta"><span className="mod-tag"><IcDl />{fmtNum(hit.downloads)}</span></div>
                         </div>
-                        <button className="btn btn-primary btn-sm" disabled={installingRP[hit.project_id]} onClick={()=>installRP(hit)}>{installingRP[hit.project_id]?'...':'Instalar'}</button>
+                        <button className="btn btn-primary btn-sm" disabled={installingRP[hit.project_id]} onClick={()=>installRP(hit)}>{installingRP[hit.project_id]?'...':t('mods.install')}</button>
                       </div>
                     ))}
                   </div>
@@ -1190,7 +1192,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
               )}
               {rpTab === 'installed' && (
                 <div className="installed-panel">
-                  {installedRPs.length===0&&<div className="mods-empty"><IcImage size={36} /><p>No hay resource packs instalados</p></div>}
+                  {installedRPs.length===0&&<div className="mods-empty"><IcImage size={36} /><p>{t('mods.noRPsInstalled')}</p></div>}
                   <div className="installed-list">
                     {installedRPs.map(r=>(
                       <div key={r.file} className={`installed-card ${deletingRP[r.file]==='eating'?'bin-eating':''} ${deletingRP[r.file]==='collapsing'?'bin-collapsing':''}`}>
@@ -1220,13 +1222,13 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>
                   </svg>
-                  Capturas
+                  {t('mods.titleScreenshots')}
                 </h2>
-                <button className="btn btn-ghost btn-sm" onClick={loadScreenshots}>↻ Actualizar</button>
+                <button className="btn btn-ghost btn-sm" onClick={loadScreenshots}>{t('mods.refresh')}</button>
               </div>
               <div className="mods-search-panel">
                 {loadingShots && <div className="mods-loading"><span className="big-spinner"/></div>}
-                {!loadingShots && screenshots.length===0 && <div className="mods-empty"><IcCamera size={48} /><p>No hay capturas en {gameDir}/screenshots</p></div>}
+                {!loadingShots && screenshots.length===0 && <div className="mods-empty"><IcCamera size={48} /><p>{t('mods.noScreenshots', { path: `${gameDir}/screenshots` })}</p></div>}
                 <div className="screenshots-grid">
                   {screenshots.map(s=>(
                     <div key={s.path} className="screenshot-card" onClick={()=>{ setFullscreenShot(s); setLightboxIdx(screenshots.indexOf(s)) }} title={s.name}>
@@ -1247,21 +1249,21 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>
                   </svg>
-                  Modpacks
+                  {t('mods.titleModpacks')}
                 </h2>
               </div>
               <div className="mods-search-panel">
                 <div className="mods-filters">
-                  <input className="mods-search-input" placeholder="Buscar modpacks..." value={mpQuery} onChange={e=>setMpQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchModpacks()} />
+                  <input className="mods-search-input" placeholder={t('mods.searchModpacksPlaceholder')} value={mpQuery} onChange={e=>setMpQuery(e.target.value)} onKeyDown={e=>e.key==='Enter'&&searchModpacks()} />
                   <select value={mpLoader} onChange={e=>setMpLoader(e.target.value)} style={{width:115}}>
-                    {['fabric','forge','quilt','neoforge','any'].map(l=><option key={l} value={l}>{l}</option>)}
+                    {['fabric','forge','quilt','neoforge','any'].map(l=><option key={l} value={l}>{l === 'any' ? t('mods.loaderAny') : l}</option>)}
                   </select>
-                  <button className="btn btn-primary btn-sm" onClick={searchModpacks} disabled={mpSearching}>{mpSearching?'...':'Buscar'}</button>
+                  <button className="btn btn-primary btn-sm" onClick={searchModpacks} disabled={mpSearching}>{mpSearching?'...':t('mods.search')}</button>
                 </div>
-                {!mpQuery.trim() && <PopularGrid items={mpPopular} label="modpacks" onOpen={hit=>openMod({...hit, _src:'modrinth'})} />}
+                {!mpQuery.trim() && <PopularGrid items={mpPopular} label={t('mods.labelModpacks')} onOpen={hit=>openMod({...hit, _src:'modrinth'})} />}
                 {mpInstalling && (
                   <div className="mp-progress" style={{padding:'8px 12px',background:'var(--accent-dim)',borderRadius:8,marginBottom:8,fontSize:13}}>
-                    Instalando... {mpProgress.done}/{mpProgress.total} mods
+                    {t('mods.installingProgress', { done: mpProgress.done, total: mpProgress.total })}
                     <div style={{height:4,background:'var(--border)',borderRadius:2,marginTop:4}}>
                       <div style={{height:'100%',background:'var(--accent)',borderRadius:2,width:`${mpProgress.total ? (mpProgress.done/mpProgress.total)*100 : 0}%`,transition:'width 0.3s'}} />
                     </div>
@@ -1279,7 +1281,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                           <span className="mod-tag"><IcDl />{fmtNum(hit.downloads)}</span>
                         </div>
                       </div>
-                      <button className="btn btn-primary btn-sm" onClick={e=>{e.stopPropagation();openMod({...hit,_src:'modrinth'})}}>Ver versiones ›</button>
+                      <button className="btn btn-primary btn-sm" onClick={e=>{e.stopPropagation();openMod({...hit,_src:'modrinth'})}}>{t('mods.viewVersions')}</button>
                     </div>
                   ))}
                 </div>
@@ -1299,12 +1301,12 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
             <div className="lightbox-header">
               <span className="lightbox-title">{fullscreenShot.name}</span>
               <div style={{display:'flex',gap:6}}>
-                <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.copyScreenshot({ filePath: fullscreenShot.path })} title="Copiar imagen">
+                <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.copyScreenshot({ filePath: fullscreenShot.path })} title={t('mods.copyImage')}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
                   </svg>
                 </button>
-                <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.openScreenshot({ filePath: fullscreenShot.path })} title="Abrir en visor">
+                <button className="btn btn-ghost btn-sm" onClick={() => window.eclipse.openScreenshot({ filePath: fullscreenShot.path })} title={t('mods.openInViewer')}>
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
                   </svg>
@@ -1353,8 +1355,8 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
               </button>
             </div>
             <div className="modal-body">
-              {loadingFiles && <div className="mods-loading"><span className="big-spinner"/><span>Cargando versiones...</span></div>}
-              {!loadingFiles && modalFiles.length===0 && <div className="mods-empty">Sin versiones compatibles con los filtros actuales.</div>}
+              {loadingFiles && <div className="mods-loading"><span className="big-spinner"/><span>{t('mods.loadingVersions')}</span></div>}
+              {!loadingFiles && modalFiles.length===0 && <div className="mods-empty">{t('mods.noCompatibleVersions')}</div>}
               {modalFiles.map(file => {
                 const inst = installing[file.id]
                 const versionMismatch = mcVersion && file.gameVersions?.length > 0 && !file.gameVersions.includes(mcVersion)
@@ -1366,8 +1368,8 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       <div className="version-name" style={{display:'flex',alignItems:'center',gap:6}}>
                         {file.name}
                         {hasMismatch && (
-                          <span className="conflict-badge" title={[versionMismatch&&`Versión MC ${mcVersion} no soportada`,loaderMismatch&&`Loader ${loader} no soportado`].filter(Boolean).join(' · ')}>
-                            ⚠ Incompatible
+                          <span className="conflict-badge" title={[versionMismatch&&t('mods.mcVersionUnsupported', { version: mcVersion }),loaderMismatch&&t('mods.loaderUnsupported', { loader })].filter(Boolean).join(' · ')}>
+                            {t('mods.incompatible')}
                           </span>
                         )}
                       </div>
@@ -1377,7 +1379,7 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                       </div>
                       {file.changelog && (
                         <details className="version-changelog">
-                          <summary>Changelog</summary>
+                          <summary>{t('mods.changelog')}</summary>
                           <pre className="version-changelog-body">{file.changelog}</pre>
                         </details>
                       )}
@@ -1388,18 +1390,18 @@ export default function ModsView({ settings, addToQueue, updateQueue, notify }) 
                         disabled={mpInstalling}
                         onClick={() => handleInstallModpack(file.id)}
                       >
-                        {mpInstalling ? `${mpProgress.done}/${mpProgress.total}...` : <><IcDl size={13}/>Instalar Modpack</>}
+                        {mpInstalling ? `${mpProgress.done}/${mpProgress.total}...` : <><IcDl size={13}/>{t('mods.installModpack')}</>}
                       </button>
                     ) : (
                       <LiquidButton size="sm" loading={inst?.loading??false} progress={inst?.progress??0} done={inst?.done??false}
-                        idleLabel="Instalar" doneLabel="Instalado" onClick={()=>installFile(file)} disabled={!!inst} />
+                        idleLabel={t('mods.install')} doneLabel={t('mods.installed')} onClick={()=>installFile(file)} disabled={!!inst} />
                     )}
                   </div>
                 )
               })}
               {modalDeps.length > 0 && (
                 <div className="deps-panel">
-                  <span className="deps-title">Requiere:</span>
+                  <span className="deps-title">{t('mods.requires')}</span>
                   {modalDeps.map(d => (
                     <span key={d.id} className="dep-chip">
                       {d.icon_url && <img src={d.icon_url} alt="" style={{width:14,height:14,borderRadius:3,objectFit:'cover'}} />}

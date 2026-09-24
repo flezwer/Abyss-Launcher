@@ -1,12 +1,14 @@
 import { useEffect, useState, useRef } from 'react'
 import './SplashScreen.css'
 import EclipseLogo from './EclipseLogo'
+import { useT } from '../i18n'
 
 /**
- * SplashScreen — pantalla de carga al arrancar Eclipse.
+ * SplashScreen — pantalla de carga al arrancar Abyss.
  * onDone() se llama cuando termina la animación de salida.
  */
 export default function SplashScreen({ onDone }) {
+  const t = useT()
   const [phase, setPhase] = useState('enter')  // 'enter' | 'idle' | 'exit'
   const [barW,  setBarW]  = useState(0)
   const canvasRef = useRef(null)
@@ -101,10 +103,10 @@ export default function SplashScreen({ onDone }) {
           <div className="splash-bar-tip" style={{ left: `${barW}%` }} />
         </div>
         <span className="splash-bar-label">
-          {barW < 40  ? 'Iniciando...'
-         : barW < 80  ? 'Cargando módulos...'
-         : barW < 100 ? 'Casi listo...'
-         :              'Bienvenido'}
+          {barW < 40  ? t('shell.splashStarting')
+         : barW < 80  ? t('shell.splashLoadingModules')
+         : barW < 100 ? t('shell.splashAlmostReady')
+         :              t('shell.splashWelcome')}
         </span>
       </div>
 

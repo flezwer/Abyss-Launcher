@@ -22,25 +22,32 @@ import { useAccent } from './hooks/useAccent'
 import { useBg } from './hooks/useBg'
 import { useNotifications } from './hooks/useNotifications'
 import { useDownloadQueue } from './hooks/useDownloadQueue'
+import { useT, translate, getLang } from './i18n'
+
+// The log checks below match raw game output and must stay as they are; only the labels are translated.
+function crashHint(key, nav, icon) {
+  return { label: translate(`app.${key}Label`), detail: translate(`app.${key}Detail`), nav, icon }
+}
 
 function getCrashHint(logs, code) {
   const text = logs.join('\n').toLowerCase()
   if (text.includes('outofmemoryerror') || text.includes('java.lang.outofmemory'))
-    return { label: 'RAM insuficiente', detail: 'Aumenta la RAM en Ajustes', nav: 'settings', icon: 'M' }
+    return crashHint('hintRam', 'settings', 'M')
   if (text.includes('nosuchfielderror') || text.includes('classnotfoundexception') || text.includes('nosuchmethoderror'))
-    return { label: 'Mod incompatible', detail: 'Desactiva mods recientes', nav: 'mods', icon: 'L' }
+    return crashHint('hintMod', 'mods', 'L')
   if (text.includes('nullpointerexception') && text.includes('mod'))
-    return { label: 'Error en mod', detail: 'Revisa mods instalados', nav: 'mods', icon: 'L' }
+    return crashHint('hintModError', 'mods', 'L')
   if (code === -1073741819 || code === 3221225477)
-    return { label: 'Crash de driver', detail: 'Actualiza drivers de gráficos', nav: null, icon: 'G' }
+    return crashHint('hintDriver', null, 'G')
   if (code === 1 && text.includes('could not find or load main class'))
-    return { label: 'Java no encontrado', detail: 'Verifica la ruta de Java en Ajustes', nav: 'settings', icon: 'J' }
+    return crashHint('hintJavaMissing', 'settings', 'J')
   if (text.includes('unsupportedclassversionerror') || text.includes('class file version'))
-    return { label: 'Java desactualizado', detail: 'Minecraft 1.17+ necesita Java 17, 1.20.5+ necesita Java 21. Configura la ruta en Ajustes', nav: 'settings', icon: 'J' }
+    return crashHint('hintJavaOld', 'settings', 'J')
   return null
 }
 
 export default function App() {
+  const t = useT()
   const [splashDone, setSplashDone] = useState(false)
   const [activeView, setActiveView] = useState('home')
   const [accounts, setAccounts] = useState([])
@@ -109,20 +116,20 @@ export default function App() {
       }
       setLaunching(false)
       setProgress(null)
-      setLogs(prev => [...prev, `\n── Juego cerrado (código ${code}) ──`])
+      setLogs(prev => [...prev, `\n${translate('app.gameClosedLog', { code })}`])
       if (code !== 0 && code !== null) {
         setCrashCode(code)
         setShowCrash(true)
-        notify({ message: `El juego crasheó (código ${code})`, type: 'error', duration: 0 })
+        notify({ message: translate('app.gameCrashedNotify', { code }), type: 'error', duration: 0 })
         // En crash: quedarse en consola para ver logs + overlay
       } else {
-        notify({ message: 'Juego cerrado', type: 'info' })
+        notify({ message: translate('app.gameClosedNotify'), type: 'info' })
         // Cierre normal: volver al inicio tras 1.2 s
         setTimeout(() => setActiveView('home'), 1200)
       }
       window.eclipse.osNotify?.({
-        title: code !== 0 && code !== null ? 'Minecraft crasheó' : 'Minecraft cerrado',
-        body: code !== 0 && code !== null ? `Código de salida: ${code}` : 'La sesión terminó correctamente.',
+        title: code !== 0 && code !== null ? translate('app.osCrashTitle') : translate('app.osClosedTitle'),
+        body: code !== 0 && code !== null ? translate('app.osCrashBody', { code }) : translate('app.osClosedBody'),
       })
     })
     return () => {
@@ -138,6 +145,8 @@ export default function App() {
   }
 
   const saveSettings = async (newSettings) => {
+    // Always keep the language the user picked (views hold older copies of settings)
+    newSettings = { ...newSettings, language: newSettings.language || getLang() }
     setSettings(newSettings)
     await window.eclipse.saveSettings(newSettings)
   }
@@ -189,11 +198,11 @@ export default function App() {
             <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{margin:'0 auto 8px',display:'block'}}>
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <h3>El juego crasheó</h3>
-            <p className="crash-code">Código de salida: <code>{crashCode}</code></p>
+            <h3>{t('app.crashTitle')}</h3>
+            <p className="crash-code">{t('app.exitCodeLabel')} <code>{crashCode}</code></p>
             {(() => {
               const hint = getCrashHint(logs, crashCode)
-              if (!hint) return <p className="crash-hint">Revisa la consola para más detalles.</p>
+              if (!hint) return <p className="crash-hint">{t('app.checkConsole')}</p>
               return (
                 <div className="crash-hint-box">
                   <div className="crash-hint-label">
@@ -209,15 +218,15 @@ export default function App() {
                 const hint = getCrashHint(logs, crashCode)
                 return hint?.nav ? (
                   <button className="btn btn-primary" onClick={() => { setShowCrash(false); setActiveView(hint.nav) }}>
-                    Ir a {hint.nav === 'settings' ? 'Ajustes' : 'Mods'}
+                    {hint.nav === 'settings' ? t('app.goToSettings') : t('app.goToMods')}
                   </button>
                 ) : null
               })()}
               <button className="btn btn-primary" onClick={() => { setShowCrash(false); setActiveView('console') }}>
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-                Ver consola
+                {t('app.viewConsole')}
               </button>
-              <button className="btn btn-ghost" onClick={() => setShowCrash(false)}>Cerrar</button>
+              <button className="btn btn-ghost" onClick={() => setShowCrash(false)}>{t('app.close')}</button>
             </div>
           </div>
         </div>

@@ -1,3 +1,5 @@
+import { translate, intlLocale } from '../i18n'
+
 export function fmtTime(ms) {
   if (!ms) return '0m'
   const h = Math.floor(ms / 3600000)
@@ -15,8 +17,10 @@ export function fmtSecs(s) {
 export function relativeTime(iso) {
   const diff = Date.now() - new Date(iso).getTime()
   const d = Math.floor(diff / 86400000), h = Math.floor(diff / 3600000), m = Math.floor(diff / 60000)
-  if (d >= 1) return `hace ${d}d`
-  if (h >= 1) return `hace ${h}h`
-  if (m >= 1) return `hace ${m}m`
-  return 'hace un momento'
+  if (m < 1) return translate('time.justNow')
+  // "hace 5 d" / "5 days ago" / "5 дн. назад"… and "ayer" / "yesterday" for 1 day
+  const rtf = new Intl.RelativeTimeFormat(intlLocale(), { numeric: 'auto', style: 'short' })
+  if (d >= 1) return rtf.format(-d, 'day')
+  if (h >= 1) return rtf.format(-h, 'hour')
+  return rtf.format(-m, 'minute')
 }

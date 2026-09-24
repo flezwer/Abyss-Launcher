@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import './Sidebar.css'
+import { useT } from '../i18n'
 
 /* ── Iconos SVG personalizados ─────────────────────────────── */
 
@@ -75,17 +76,18 @@ const IconStats = () => (
 )
 
 const NAV = [
-  { id: 'home',     Icon: IconHome,     label: 'Inicio'    },
-  { id: 'accounts', Icon: IconAccounts, label: 'Cuentas'   },
-  { id: 'mods',     Icon: IconMods,     label: 'Mods'      },
-  { id: 'servers',  Icon: IconServers,  label: 'Servidores' },
-  { id: 'worlds',   Icon: IconWorlds,   label: 'Mundos'    },
-  { id: 'console',  Icon: IconConsole,  label: 'Consola'   },
-  { id: 'stats',    Icon: IconStats,    label: 'Stats'     },
-  { id: 'settings', Icon: IconSettings, label: 'Ajustes'   },
+  { id: 'home',     Icon: IconHome,     labelKey: 'shell.navHome'     },
+  { id: 'accounts', Icon: IconAccounts, labelKey: 'shell.navAccounts' },
+  { id: 'mods',     Icon: IconMods,     labelKey: 'shell.navMods'     },
+  { id: 'servers',  Icon: IconServers,  labelKey: 'shell.navServers'  },
+  { id: 'worlds',   Icon: IconWorlds,   labelKey: 'shell.navWorlds'   },
+  { id: 'console',  Icon: IconConsole,  labelKey: 'shell.navConsole'  },
+  { id: 'stats',    Icon: IconStats,    labelKey: 'shell.navStats'    },
+  { id: 'settings', Icon: IconSettings, labelKey: 'shell.navSettings' },
 ]
 
 export default function Sidebar({ activeView, setActiveView }) {
+  const t = useT()
   const [hasUpdate, setHasUpdate] = useState(false)
   const [updateUrl, setUpdateUrl] = useState('')
   const [modBadge, setModBadge] = useState(() => { try { return Number(localStorage.getItem('eclipse-mod-updates') || 0) } catch { return 0 } })
@@ -113,7 +115,7 @@ export default function Sidebar({ activeView, setActiveView }) {
   return (
     <aside className={`sidebar ${collapsed ? 'sidebar--collapsed' : ''}`}>
       <nav className="sidebar-nav">
-        {NAV.map(({ id, Icon, label }) => (
+        {NAV.map(({ id, Icon, labelKey }) => { const label = t(labelKey); return (
           <button
             key={id}
             className={`sidebar-item ${activeView === id ? 'active' : ''}`}
@@ -131,20 +133,20 @@ export default function Sidebar({ activeView, setActiveView }) {
             </span>
             <span className="sidebar-nav-label">{label}</span>
           </button>
-        ))}
+        )})}
       </nav>
       <div className="sidebar-bottom">
         {hasUpdate && (
           <div
             className="update-notice"
             onClick={() => updateUrl && window.eclipse.openExternal(updateUrl)}
-            title="Hay una actualización disponible"
+            title={t('shell.updateAvailableTitle')}
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-            <span> Actualización disponible</span>
+            <span> {t('shell.updateAvailable')}</span>
           </div>
         )}
-        <button className="sidebar-collapse-btn" onClick={toggle} title={collapsed ? 'Expandir' : 'Colapsar'}>
+        <button className="sidebar-collapse-btn" onClick={toggle} title={collapsed ? t('shell.expand') : t('shell.collapse')}>
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             {collapsed
               ? <polyline points="9 18 15 12 9 6"/>

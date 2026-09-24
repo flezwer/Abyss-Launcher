@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, shell } = require('electron')
+const { app, BrowserWindow, ipcMain, shell, session } = require('electron')
 const path = require('path')
 const fs = require('fs')
 const http = require('http')
@@ -222,9 +222,11 @@ ipcMain.handle('auth:ms:start', async () => {
   try {
     const { Auth } = _msmcAuth
     const authManager = new Auth('select_account')
+    const authSession = session.fromPartition('persist:msauth', { cache: false })
     const xboxManager = await authManager.launch('electron', {
       title: 'Abyss Launcher — Iniciar sesión con Microsoft',
-      icon: path.join(__dirname, '..', 'assets', 'icon.png')
+      icon: path.join(__dirname, '..', 'assets', 'icon.png'),
+      webPreferences: { session: authSession }
     })
     const mc = await xboxManager.getMinecraft()
     const profile = mc.profile

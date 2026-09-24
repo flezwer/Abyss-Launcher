@@ -80,6 +80,52 @@
 .toggle-row span:first-child { font-size: 13px; font-weight: 500; }
 
 /* ── Apariencia ── */
+/* Idioma */
+.lang-field { margin-bottom: 14px; }
+
+.lang-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 6px;
+}
+
+.lang-btn {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 5px;
+  min-width: 0;
+  padding: 7px 10px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-raised);
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+.lang-btn-name { font-weight: 500; }
+.lang-btn-country {
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lang-btn:hover {
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.lang-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.lang-btn.active .lang-btn-name { font-weight: 600; }
+.lang-btn.active .lang-btn-country { color: rgba(255, 255, 255, 0.75); }
+
 .theme-toggle {
   display: flex;
   gap: 8px;

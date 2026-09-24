@@ -1,0 +1,53 @@
+export default {
+  'es-ES': {
+    title: 'Mundos',
+    refresh: 'Actualizar',
+    empty: 'No hay mundos en {path}',
+    lastPlayed: 'Último acceso: {date}',
+    openFolder: 'Abrir carpeta',
+    backup: 'Copia de seguridad',
+  },
+  'es-MX': {
+    backup: 'Respaldo',
+  },
+  en: {
+    title: 'Worlds',
+    refresh: 'Refresh',
+    empty: 'No worlds in {path}',
+    lastPlayed: 'Last played: {date}',
+    openFolder: 'Open folder',
+    backup: 'Backup',
+  },
+  it: {
+    title: 'Mondi',
+    refresh: 'Aggiorna',
+    empty: 'Nessun mondo in {path}',
+    lastPlayed: 'Ultimo accesso: {date}',
+    openFolder: 'Apri cartella',
+    backup: 'Backup',
+  },
+  fr: {
+    title: 'Mondes',
+    refresh: 'Actualiser',
+    empty: 'Aucun monde dans {path}',
+    lastPlayed: 'Dernière partie : {date}',
+    openFolder: 'Ouvrir le dossier',
+    backup: 'Sauvegarde',
+  },
+  de: {
+    title: 'Welten',
+    refresh: 'Aktualisieren',
+    empty: 'Keine Welten in {path}',
+    lastPlayed: 'Zuletzt gespielt: {date}',
+    openFolder: 'Ordner öffnen',
+    backup: 'Backup',
+  },
+  ru: {
+    title: 'Миры',
+    refresh: 'Обновить',
+    empty: 'В {path} нет миров',
+    lastPlayed: 'Последний вход: {date}',
+    openFolder: 'Открыть папку',
+    backup: 'Резервная копия',
+  },
+}

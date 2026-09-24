@@ -1,0 +1,45 @@
+export default {
+  'es-ES': {
+    title: 'Descargas ({count})',
+    speed: '{speed} MB/s',
+    eta: 'Quedan {time}',
+    seconds: '{n} s',
+    minutes: '{n} min',
+  },
+  'es-MX': {},
+  en: {
+    title: 'Downloads ({count})',
+    speed: '{speed} MB/s',
+    eta: '{time} left',
+    seconds: '{n}s',
+    minutes: '{n}m',
+  },
+  it: {
+    title: 'Download ({count})',
+    speed: '{speed} MB/s',
+    eta: 'Mancano {time}',
+    seconds: '{n} s',
+    minutes: '{n} min',
+  },
+  fr: {
+    title: 'Téléchargements ({count})',
+    speed: '{speed} Mo/s',
+    eta: 'Reste {time}',
+    seconds: '{n} s',
+    minutes: '{n} min',
+  },
+  de: {
+    title: 'Downloads ({count})',
+    speed: '{speed} MB/s',
+    eta: 'Noch {time}',
+    seconds: '{n} s',
+    minutes: '{n} Min.',
+  },
+  ru: {
+    title: 'Загрузки ({count})',
+    speed: '{speed} МБ/с',
+    eta: 'Осталось {time}',
+    seconds: '{n} с',
+    minutes: '{n} мин',
+  },
+}

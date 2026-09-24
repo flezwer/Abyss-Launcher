@@ -87,8 +87,8 @@
 .lang-label {
   display: flex; flex-direction: column; align-items: center; gap: 1px;
 }
-.lang-country { font-size: 12px; font-weight: 700; }
-.lang-name    { font-size: 10px; color: var(--text-muted); }
+.lang-country { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+.lang-name    { font-size: 10px; color: var(--text-secondary); }
 
 /* ── Checkmark de selección ───────────────────────────────────────────────── */
 .lang-check {

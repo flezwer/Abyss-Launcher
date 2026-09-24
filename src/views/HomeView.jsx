@@ -5,6 +5,15 @@ import PlayerAvatar from '../components/PlayerAvatar'
 import NotesPad from '../components/NotesPad'
 import { fmtTime, fmtSecs, relativeTime } from '../utils/time'
 import { logActivity, getActivity } from '../utils/activity'
+import { useI18n, getLang } from '../i18n'
+
+// Renders a translated string with its {placeholders} wrapped in <strong>
+function richText(str, vars, strongStyle) {
+  return str.split(/(\{\w+\})/g).map((part, i) => {
+    const m = part.match(/^\{(\w+)\}$/)
+    return m && m[1] in vars ? <strong key={i} style={strongStyle}>{vars[m[1]]}</strong> : part
+  })
+}
 
 export default function HomeView({
   accounts, activeAccount, setActiveAccount,
@@ -12,6 +21,7 @@ export default function HomeView({
   setLogs, setProgress, progress, setActiveView, notify,
   instances: instancesProp, setInstances: setInstancesProp
 }) {
+  const { t, locale } = useI18n()
   const [versions, setVersions] = useState([])
   const [selectedVersion, setSelectedVersion] = useState('1.21.4')
   const [showSnapshots, setShowSnapshots] = useState(false)
@@ -47,7 +57,7 @@ export default function HomeView({
   const [javaVersionAlert, setJavaVersionAlert] = useState(null) // { detected: 8, needed: 21 }
   const [shareModal, setShareModal] = useState(null)
   const [importCode, setImportCode] = useState('')
-  const [launchStage, setLaunchStage] = useState('Preparando...')
+  const [launchStage, setLaunchStage] = useState('stagePreparing') // i18n key suffix (home.*)
   const [installingJava, setInstallingJava] = useState(false)
   const [javaInstallProgress, setJavaInstallProgress] = useState(0)
 
@@ -55,7 +65,7 @@ export default function HomeView({
     if (!launching) {
       setSessionSecs(0)
       setStatusMsg('')   // limpiar mensaje al volver al estado normal
-      setLaunchStage('Preparando...')
+      setLaunchStage('stagePreparing')
       return
     }
     const id = setInterval(() => setSessionSecs(s => s + 1), 1000)
@@ -66,9 +76,9 @@ export default function HomeView({
   useEffect(() => {
     if (!window.eclipse?.on) return
     const handler = (log) => {
-      if (/downloading|descargando/i.test(log)) setLaunchStage('Descargando archivos...')
-      else if (/extracting|extrayendo/i.test(log)) setLaunchStage('Extrayendo archivos...')
-      else if (/launching|starting/i.test(log)) setLaunchStage('Iniciando Minecraft...')
+      if (/downloading|descargando/i.test(log)) setLaunchStage('stageDownloading')
+      else if (/extracting|extrayendo/i.test(log)) setLaunchStage('stageExtracting')
+      else if (/launching|starting/i.test(log)) setLaunchStage('stageLaunching')
     }
     window.eclipse.on('game:log', handler)
     return () => window.eclipse.off?.('game:log', handler)
@@ -78,9 +88,9 @@ export default function HomeView({
   useEffect(() => {
     if (!progress?.name) return
     const n = progress.name.toLowerCase()
-    if (/download|descarg/.test(n)) setLaunchStage('Descargando archivos...')
-    else if (/extract|extray/.test(n)) setLaunchStage('Extrayendo archivos...')
-    else if (/launch|start|inici/.test(n)) setLaunchStage('Iniciando Minecraft...')
+    if (/download|descarg/.test(n)) setLaunchStage('stageDownloading')
+    else if (/extract|extray/.test(n)) setLaunchStage('stageExtracting')
+    else if (/launch|start|inici/.test(n)) setLaunchStage('stageLaunching')
   }, [progress])
 
   // ── Helper: Java mínimo por versión MC ───────────────────────────────────────
@@ -197,7 +207,7 @@ export default function HomeView({
     if (!settings) return
     setLaunching(true)
     setLogs([])
-    setStatusMsg('Iniciando...')
+    setStatusMsg(t('home.starting'))
     setActiveView('console')
 
     const launchSettings = ramOverrides
@@ -214,7 +224,7 @@ export default function HomeView({
 
     if (!result.ok) {
       setLaunching(false)
-      setStatusMsg('Error: ' + result.error)
+      setStatusMsg(t('home.errorMsg', { error: result.error }))
       // Detectar error de versión de Java y mostrar alerta específica
       if (result.error && /java\s*(\d+)/i.test(result.error)) {
         const m = result.error.match(/Java\s+(\d+)/i)
@@ -223,11 +233,11 @@ export default function HomeView({
           .then(({ major }) => { if (major > 0) setJavaVersionAlert({ detected: major, needed }) })
           .catch(() => setJavaVersionAlert({ detected: 8, needed }))
       }
-      notify?.({ message: `Error: ${result.error}`, type: 'error' })
+      notify?.({ message: t('home.errorMsg', { error: result.error }), type: 'error' })
     } else {
-      notify?.({ message: 'Minecraft iniciado', type: 'success' })
+      notify?.({ message: t('home.minecraftStarted'), type: 'success' })
       if (activeInstance) updateInstance(activeInstance.id, { lastPlayed: new Date().toISOString() })
-      logActivity(`Lanzaste Minecraft ${versionOverride ?? selectedVersion}`)
+      logActivity(t('home.activityLaunched', { version: versionOverride ?? selectedVersion }))
       setActivity(getActivity())
     }
   }
@@ -254,7 +264,7 @@ export default function HomeView({
     setNewInstName('')
     setNewInstLoader('vanilla')
     setNewInstLoaderVer('')
-    logActivity(`Instancia creada: ${inst.name}`)
+    logActivity(t('home.activityInstanceCreated', { name: inst.name }))
     setActivity(getActivity())
   }
 
@@ -275,14 +285,14 @@ export default function HomeView({
     if (res.ok) {
       const updated = [...instances, res.instance]
       setInstances(updated)
-      notify?.({ message: `Instancia clonada: ${res.instance.name}`, type: 'success' })
+      notify?.({ message: t('home.instanceCloned', { name: res.instance.name }), type: 'success' })
     } else {
-      notify?.({ message: 'Error al clonar: ' + res.error, type: 'error' })
+      notify?.({ message: t('home.cloneFailed', { error: res.error }), type: 'error' })
     }
   }
 
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Buenos días' : hour < 18 ? 'Buenas tardes' : 'Buenas noches'
+  const greeting = t(hour < 12 ? 'home.greetingMorning' : hour < 18 ? 'home.greetingAfternoon' : 'home.greetingEvening')
   const username = activeAccount?.username
   const [notesOpen, setNotesOpen] = useState(false)
 
@@ -299,8 +309,8 @@ export default function HomeView({
             </div>
             <div className="home-hero-sub">
               {instances.length > 0
-                ? `${instances.length} instancia${instances.length !== 1 ? 's' : ''} · ${selectedVersion}`
-                : `Listo para jugar · ${selectedVersion}`}
+                ? `${instances.length === 1 ? t('home.instanceCountOne') : t('home.instanceCountMany', { count: instances.length })} · ${selectedVersion}`
+                : t('home.readyToPlay', { version: selectedVersion })}
             </div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
@@ -323,16 +333,16 @@ export default function HomeView({
               </svg>
             </div>
             <div className="java-version-alert__body">
-              <span className="java-version-alert__title">Java desactualizado</span>
+              <span className="java-version-alert__title">{t('home.javaOutdatedTitle')}</span>
               <span className="java-version-alert__msg">
-                Se ha detectado <strong>Java {javaVersionAlert.detected}</strong>, por favor instala <strong>Java {javaVersionAlert.needed}</strong> para jugar esta versión.
+                {richText(t('home.javaOutdatedMsg'), { detected: `Java ${javaVersionAlert.detected}`, needed: `Java ${javaVersionAlert.needed}` })}
               </span>
               <div className="java-version-alert__actions">
                 <button
                   className="java-version-alert__download"
                   onClick={() => window.eclipse.openExternal(`https://adoptium.net/temurin/releases/?version=${javaVersionAlert.needed}`)}
                 >
-                  Descargar Java {javaVersionAlert.needed}
+                  {t('home.downloadJavaVersion', { version: javaVersionAlert.needed })}
                   <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{marginLeft:5}}>
                     <line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/>
                   </svg>
@@ -350,17 +360,17 @@ export default function HomeView({
                     window.eclipse.offJavaInstallProgress?.()
                     setInstallingJava(false)
                     if (res.ok) {
-                      await window.eclipse.saveSettings({ ...settings, javaPath: res.javaPath })
+                      await window.eclipse.saveSettings({ ...settings, javaPath: res.javaPath, language: getLang() })
                       setJavaVersionAlert(null)
-                      notify?.({ message: `Java ${javaVersionAlert.needed} instalado`, type: 'success' })
+                      notify?.({ message: t('home.javaInstalled', { version: javaVersionAlert.needed }), type: 'success' })
                     } else {
-                      notify?.({ message: 'Error: ' + res.error, type: 'error' })
+                      notify?.({ message: t('home.errorMsg', { error: res.error }), type: 'error' })
                     }
                   }}
                 >
                   {installingJava
-                    ? `Descargando Java ${javaVersionAlert.needed}... ${javaInstallProgress}%`
-                    : `Instalar automáticamente`}
+                    ? t('home.downloadingJava', { version: javaVersionAlert.needed, percent: javaInstallProgress })
+                    : t('home.autoInstall')}
                 </button>
                 <button className="java-version-alert__dismiss" onClick={() => setJavaVersionAlert(null)}>
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
@@ -378,9 +388,9 @@ export default function HomeView({
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:6,flexShrink:0}}>
               <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
             </svg>
-            <strong>Java no encontrado.</strong> Instala Java 17 o superior para poder jugar.
+            <strong>{t('home.javaNotFound')}</strong> {t('home.javaNotFoundHint')}
             <a href="#" onClick={e => { e.preventDefault(); window.eclipse.openExternal('https://adoptium.net/temurin/releases/?version=22') }} style={{color:'var(--accent-bright)',marginLeft:8}}>
-              Descargar Java →
+              {t('home.downloadJava')} →
             </a>
           </div>
         )}
@@ -391,7 +401,7 @@ export default function HomeView({
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <rect x="2" y="7" width="20" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 4 0v2"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="12" y1="10" x2="12" y2="14"/>
             </svg>
-            Versión
+            {t('home.version')}
           </div>
           <div className="ver-picker" ref={versionDropRef}>
             <button
@@ -414,12 +424,12 @@ export default function HomeView({
                     type="button"
                     className={`ver-filter-pill${showSnapshots ? ' ver-filter-pill--on' : ''}`}
                     onClick={() => setShowSnapshots(s => !s)}
-                  >Snapshots</button>
+                  >{t('home.snapshots')}</button>
                   <button
                     type="button"
                     className={`ver-filter-pill${showBetas ? ' ver-filter-pill--on' : ''}`}
                     onClick={() => setShowBetas(b => !b)}
-                  >Betas</button>
+                  >{t('home.betas')}</button>
                 </div>
                 <div className="ver-list">
                   {(filtered.length === 0 ? [{ id: '1.21.4', type: 'release' }] : filtered).map(v => (
@@ -458,13 +468,13 @@ export default function HomeView({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
               </svg>
-              Instancias
+              {t('home.instances')}
             </span>
             <div style={{ display: 'flex', gap: 6 }}>
               <button
                 className={`btn btn-ghost btn-sm`}
                 onClick={() => setInstanceView(v => v === 'list' ? 'grid' : 'list')}
-                title={instanceView === 'list' ? 'Vista cuadrícula' : 'Vista lista'}
+                title={instanceView === 'list' ? t('home.gridView') : t('home.listView')}
               >
                 {instanceView === 'list'
                   ? <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
@@ -474,15 +484,15 @@ export default function HomeView({
               <button className="btn btn-ghost btn-sm" onClick={async () => {
                 if (!activeInstance) return
                 const res = await window.eclipse.exportInstance({ instanceId: activeInstance.id })
-                if (res.ok) notify?.({ message: 'Instancia exportada', type: 'success' })
-                else notify?.({ message: `Error: ${res.error}`, type: 'error' })
-              }}>⬆ Exportar</button>
+                if (res.ok) notify?.({ message: t('home.instanceExported'), type: 'success' })
+                else notify?.({ message: t('home.errorMsg', { error: res.error }), type: 'error' })
+              }}>⬆ {t('home.export')}</button>
               <button className="btn btn-ghost btn-sm" onClick={async () => {
                 if (!activeInstance) return
                 const res = await window.eclipse.exportInstanceMrpack({ instanceId: activeInstance.id })
-                if (res.ok) notify?.({ message: 'Exportado como .mrpack', type: 'success' })
-                else if (res.error) notify?.({ message: `Error: ${res.error}`, type: 'error' })
-              }} title="Exportar como Modrinth Pack (.mrpack)">⬆ .mrpack</button>
+                if (res.ok) notify?.({ message: t('home.exportedMrpack'), type: 'success' })
+                else if (res.error) notify?.({ message: t('home.errorMsg', { error: res.error }), type: 'error' })
+              }} title={t('home.exportMrpackTitle')}>⬆ .mrpack</button>
               <input
                 ref={importInstRef}
                 type="file"
@@ -497,19 +507,19 @@ export default function HomeView({
                     const insts = await window.eclipse.loadInstances()
                     setInstances(insts)
                     setActiveInstance(res.instance)
-                    notify?.({ message: 'Instancia importada', type: 'success' })
+                    notify?.({ message: t('home.instanceImported'), type: 'success' })
                   } else {
-                    notify?.({ message: `Error: ${res.error}`, type: 'error' })
+                    notify?.({ message: t('home.errorMsg', { error: res.error }), type: 'error' })
                   }
                   e.target.value = ''
                 }}
               />
               <button className="btn btn-ghost btn-sm" onClick={() => importInstRef.current?.click()}>
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-                Importar
+                {t('home.import')}
               </button>
               <button className="btn btn-ghost btn-sm" onClick={() => setShowNewInstance(s => !s)}>
-                + Nueva
+                + {t('home.newInstance')}
               </button>
             </div>
           </div>
@@ -518,7 +528,7 @@ export default function HomeView({
             <div className="card new-instance-form">
               <input
                 autoFocus
-                placeholder="Nombre de la instancia"
+                placeholder={t('home.instanceNamePlaceholder')}
                 value={newInstName}
                 onChange={e => setNewInstName(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && createInstance()}
@@ -540,8 +550,8 @@ export default function HomeView({
                     style={{ flex:1 }}
                     disabled={loadingFabric || fabricLoaders.length === 0}
                   >
-                    {loadingFabric && <option value="">Cargando...</option>}
-                    {!loadingFabric && fabricLoaders.length === 0 && <option value="">Sin versiones</option>}
+                    {loadingFabric && <option value="">{t('home.loading')}</option>}
+                    {!loadingFabric && fabricLoaders.length === 0 && <option value="">{t('home.noVersions')}</option>}
                     {fabricLoaders.map(l => (
                       <option key={l.version} value={l.version}>
                         {l.version}{l.stable ? '' : ' ⚠'}
@@ -551,8 +561,8 @@ export default function HomeView({
                 )}
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button className="btn btn-primary btn-sm" onClick={createInstance} disabled={newInstLoader === 'fabric' && !newInstLoaderVer}>Crear</button>
-                <button className="btn btn-ghost btn-sm" onClick={() => { setShowNewInstance(false); setNewInstName(''); setNewInstLoader('vanilla'); setNewInstLoaderVer('') }}>Cancelar</button>
+                <button className="btn btn-primary btn-sm" onClick={createInstance} disabled={newInstLoader === 'fabric' && !newInstLoaderVer}>{t('home.create')}</button>
+                <button className="btn btn-ghost btn-sm" onClick={() => { setShowNewInstance(false); setNewInstName(''); setNewInstLoader('vanilla'); setNewInstLoaderVer('') }}>{t('home.cancel')}</button>
               </div>
             </div>
           )}
@@ -562,7 +572,7 @@ export default function HomeView({
             if (allTags.length === 0) return null
             return (
               <div className="tag-filter-bar">
-                <button className={`tag-chip ${!tagFilter ? 'tag-chip--active' : ''}`} onClick={() => setTagFilter(null)}>Todas</button>
+                <button className={`tag-chip ${!tagFilter ? 'tag-chip--active' : ''}`} onClick={() => setTagFilter(null)}>{t('home.allTags')}</button>
                 {allTags.map(t => (
                   <button key={t} className={`tag-chip ${tagFilter === t ? 'tag-chip--active' : ''}`} onClick={() => setTagFilter(p => p === t ? null : t)}>{t}</button>
                 ))}
@@ -578,7 +588,7 @@ export default function HomeView({
             {visibleInstances.length === 0 && instances.length > 0 && (
               <div className="instance-card" style={{ opacity: 0.7 }}>
                 <div className="instance-info">
-                  <div className="instance-name">Sin instancias con tag "{tagFilter}"</div>
+                  <div className="instance-name">{t('home.noInstancesWithTag', { tag: tagFilter })}</div>
                 </div>
               </div>
             )}
@@ -592,7 +602,7 @@ export default function HomeView({
                 <div className="instance-info">
                   <div className="instance-name">Minecraft {selectedVersion}</div>
                   <div className="instance-sub">
-                    {activeAccount ? `Como ${activeAccount.username}` : 'Sin cuenta — añade una primero'}
+                    {activeAccount ? t('home.asUser', { user: activeAccount.username }) : t('home.noAccountAddFirst')}
                   </div>
                   {launching && progress && (
                     <div className="progress-bar-wrap">
@@ -604,8 +614,8 @@ export default function HomeView({
                   size="md"
                   loading={launching}
                   progress={pct}
-                  idleLabel="▶ Play"
-                  loadingLabel={<><span className="lb-spinner" /> {pct > 0 ? `${pct}%` : 'Iniciando...'}</>}
+                  idleLabel={`▶ ${t('home.play')}`}
+                  loadingLabel={<><span className="lb-spinner" /> {pct > 0 ? `${pct}%` : t('home.starting')}</>}
                   onClick={handleLaunch}
                   disabled={launching}
                 />
@@ -634,7 +644,7 @@ export default function HomeView({
                           {inst.loader === 'fabric' ? 'Fabric' : inst.loader}
                         </span>
                       )}
-                      {' · '}{activeAccount ? activeAccount.username : 'Sin cuenta'}
+                      {' · '}{activeAccount ? activeAccount.username : t('home.noAccount')}
                       {inst.lastPlayed && !launching && <span style={{opacity:.55}}> · {relativeTime(inst.lastPlayed)}</span>}
                       {launching && activeInstance?.id === inst.id && sessionSecs > 0 && <span style={{color:'var(--accent-bright)'}}> · ⏱ {fmtSecs(sessionSecs)}</span>}
                     </div>
@@ -655,17 +665,17 @@ export default function HomeView({
                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M12 22V12m0 0C12 6 7 4 2 6c5-1 10 2 10 6zm0 0c0-6 5-8 10-6-5-1-10 2-10 6"/>
                         </svg>
-                        <span>Seed: <code style={{ fontFamily: 'monospace', fontSize: 10 }}>{inst.seed}</code></span>
+                        <span>{t('home.seed')}: <code style={{ fontFamily: 'monospace', fontSize: 10 }}>{inst.seed}</code></span>
                         <button
                           className="btn btn-ghost btn-sm"
                           style={{ padding: '1px 4px', fontSize: 10, height: 'auto' }}
-                          title="Ver mapa de seed"
+                          title={t('home.viewSeedMap')}
                           onClick={e => { e.stopPropagation(); window.eclipse.openExternal(`https://www.minecraft-seed.net/seed/${inst.seed}`) }}
-                        >🗺 Ver</button>
+                        >🗺 {t('home.view')}</button>
                         <button
                           className="btn btn-ghost btn-sm"
                           style={{ padding: '1px 4px', fontSize: 10, height: 'auto' }}
-                          title="Copiar seed"
+                          title={t('home.copySeed')}
                           onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(inst.seed) }}
                         >
                           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -685,15 +695,15 @@ export default function HomeView({
                       size="md"
                       loading={launching && activeInstance?.id === inst.id}
                       progress={pct}
-                      idleLabel="▶ Play"
-                      loadingLabel={<><span className="lb-spinner" /> {pct > 0 ? `${pct}%` : 'Iniciando...'}</>}
+                      idleLabel={`▶ ${t('home.play')}`}
+                      loadingLabel={<><span className="lb-spinner" /> {pct > 0 ? `${pct}%` : t('home.starting')}</>}
                       onClick={e => { e.stopPropagation(); selectInstance(inst); handleLaunch(inst.version || selectedVersion, { ramMin: inst.ramMin, ramMax: inst.ramMax }) }}
                       disabled={launching}
                     />
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={e => { e.stopPropagation(); setEditingInstance(prev => prev === inst.id ? null : inst.id) }}
-                      title="Configurar instancia"
+                      title={t('home.configureInstance')}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M21 12h-2M5 12H3M12 21v-2M12 5V3"/>
@@ -702,7 +712,7 @@ export default function HomeView({
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={e => { e.stopPropagation(); updateInstance(inst.id, { pinned: !inst.pinned }) }}
-                      title={inst.pinned ? 'Desfijar' : 'Fijar arriba'}
+                      title={inst.pinned ? t('home.unpin') : t('home.pinTop')}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill={inst.pinned ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
@@ -714,12 +724,12 @@ export default function HomeView({
                         e.stopPropagation()
                         const r = await window.eclipse.backupInstanceFull({ instanceId: inst.id, gameDir: settings?.gameDir })
                         if (r.ok) {
-                          notify?.({ message: 'Backup creado', type: 'success' })
-                          logActivity(`Backup creado: ${inst.name}`)
+                          notify?.({ message: t('home.backupCreated'), type: 'success' })
+                          logActivity(t('home.activityBackup', { name: inst.name }))
                           setActivity(getActivity())
-                        } else notify?.({ message: 'Error al hacer backup', type: 'error' })
+                        } else notify?.({ message: t('home.backupFailed'), type: 'error' })
                       }}
-                      title="Backup de instancia"
+                      title={t('home.backupInstance')}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
@@ -728,7 +738,7 @@ export default function HomeView({
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={e => { e.stopPropagation(); setShareModal(inst) }}
-                      title="Compartir instancia"
+                      title={t('home.shareInstance')}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/>
@@ -739,12 +749,12 @@ export default function HomeView({
                       className="btn btn-ghost btn-sm"
                       onClick={async e => {
                         e.stopPropagation()
-                        notify?.({ message: 'Verificando archivos...', type: 'info' })
+                        notify?.({ message: t('home.verifyingFiles'), type: 'info' })
                         const res = await window.eclipse.repairGame({ account: activeAccount, version: inst.version || selectedVersion, settings: { ...settings, instanceGameDir: inst?.gameDir } })
-                        if (res.ok) notify?.({ message: 'Reparación completada', type: 'success' })
-                        else notify?.({ message: 'Error: ' + res.error, type: 'error' })
+                        if (res.ok) notify?.({ message: t('home.repairDone'), type: 'success' })
+                        else notify?.({ message: t('home.errorMsg', { error: res.error }), type: 'error' })
                       }}
-                      title="Reparar instalación"
+                      title={t('home.repairInstall')}
                     >
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
@@ -753,12 +763,12 @@ export default function HomeView({
                     <button
                       className="btn btn-ghost btn-sm"
                       onClick={e => { e.stopPropagation(); handleCloneInstance(inst.id) }}
-                      title="Clonar instancia"
+                      title={t('home.cloneInstance')}
                     >⧉</button>
                     <button
                       className="btn btn-danger btn-sm"
                       onClick={e => { e.stopPropagation(); deleteInstance(inst.id) }}
-                      title="Eliminar instancia"
+                      title={t('home.deleteInstance')}
                     >
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -770,52 +780,52 @@ export default function HomeView({
                   <div className="instance-edit-panel card">
                     <div style={{display:'flex',gap:8,flexWrap:'wrap',alignItems:'center'}}>
                       <div className="field" style={{flex:1,minWidth:120}}>
-                        <label>Versión</label>
+                        <label>{t('home.version')}</label>
                         <input value={inst.version||''} onChange={e=>updateInstance(inst.id,{version:e.target.value})} />
                       </div>
                       <div className="field" style={{width:110}}>
-                        <label>Loader</label>
+                        <label>{t('home.loader')}</label>
                         <select value={inst.loader||'vanilla'} onChange={e=>updateInstance(inst.id,{loader:e.target.value,loaderVersion:null})}>
                           <option value="vanilla">Vanilla</option>
                           <option value="fabric">Fabric</option>
                         </select>
                       </div>
                       <div className="field" style={{width:90}}>
-                        <label>RAM mín (MB)</label>
+                        <label>{t('home.ramMinMb')}</label>
                         <input type="number" step={256} min={512} value={inst.ramMin||settings?.ramMin||1024} onChange={e=>updateInstance(inst.id,{ramMin:Number(e.target.value)})} />
                       </div>
                       <div className="field" style={{width:90}}>
-                        <label>RAM máx (MB)</label>
+                        <label>{t('home.ramMaxMb')}</label>
                         <input type="number" step={256} min={512} value={inst.ramMax||settings?.ramMax||2048} onChange={e=>updateInstance(inst.id,{ramMax:Number(e.target.value)})} />
                       </div>
                     </div>
                     {inst.gameDir && (
                       <div className="field">
-                        <label>Carpeta</label>
+                        <label>{t('home.folder')}</label>
                         <div style={{fontSize:11,color:'var(--text-muted)',padding:'4px 0',wordBreak:'break-all'}}>{inst.gameDir}</div>
                       </div>
                     )}
                     <div className="field">
-                      <label>Seed del mundo</label>
+                      <label>{t('home.worldSeed')}</label>
                       <input
                         className="form-input"
-                        placeholder="Ej: -4172144997902289642"
+                        placeholder={t('home.seedPlaceholder')}
                         value={inst.seed || ''}
                         onChange={e => updateInstance(inst.id, { seed: e.target.value })}
                       />
                     </div>
                     <div className="field">
-                      <label>Notas</label>
+                      <label>{t('home.notes')}</label>
                       <textarea
                         className="form-input"
                         style={{ minHeight: 80, resize: 'vertical' }}
-                        placeholder="Notas, coordenadas, seeds..."
+                        placeholder={t('home.notesPlaceholder')}
                         value={inst.notes || ''}
                         onChange={e => updateInstance(inst.id, { notes: e.target.value })}
                       />
                     </div>
                     <div className="field">
-                      <label>Color de acento</label>
+                      <label>{t('home.accentColor')}</label>
                       <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
                         {['#7c6af7', '#22c55e', '#f97316', '#ef4444', '#3b82f6', '#ec4899'].map(color => (
                           <button
@@ -833,12 +843,12 @@ export default function HomeView({
                           onClick={() => updateInstance(inst.id, { accentColor: null })}
                           style={{ fontSize: 11, padding: '1px 8px', borderRadius: 10, border: '1px solid var(--border)', background: 'none', color: 'var(--text-secondary)', cursor: 'pointer' }}
                         >
-                          Ninguno
+                          {t('home.none')}
                         </button>
                       </div>
                     </div>
                     <div className="field">
-                      <label>Tags</label>
+                      <label>{t('home.tags')}</label>
                       <div className="tag-editor">
                         {(inst.tags || []).map(tag => (
                           <span key={tag} className="inst-tag inst-tag--edit">
@@ -848,7 +858,7 @@ export default function HomeView({
                         ))}
                         <input
                           className="tag-input"
-                          placeholder="+ tag"
+                          placeholder={t('home.addTagPlaceholder')}
                           style={{ width: 80, fontSize: 12 }}
                           onKeyDown={e => {
                             if (e.key === 'Enter' && e.target.value.trim()) {
@@ -879,7 +889,7 @@ export default function HomeView({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
               </svg>
-              Tiempo jugado
+              {t('home.playtime')}
             </div>
             <div className="playtime-list">
               {Object.values(playtime).sort((a,b) => b.totalMs - a.totalMs).map(p => (
@@ -887,7 +897,7 @@ export default function HomeView({
                   <span className="playtime-ver">MC {p.version}</span>
                   <span className="playtime-user">{p.username}</span>
                   <span className="playtime-time">{fmtTime(p.totalMs)}</span>
-                  <span className="playtime-sessions">{p.sessions} {p.sessions === 1 ? 'sesión' : 'sesiones'}</span>
+                  <span className="playtime-sessions">{p.sessions === 1 ? t('home.sessionOne') : t('home.sessionMany', { count: p.sessions })}</span>
                 </div>
               ))}
             </div>
@@ -901,7 +911,7 @@ export default function HomeView({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="4" y="4" width="16" height="16" rx="2"/><rect x="9" y="9" width="6" height="6"/><line x1="9" y1="1" x2="9" y2="4"/><line x1="15" y1="1" x2="15" y2="4"/><line x1="9" y1="20" x2="9" y2="23"/><line x1="15" y1="20" x2="15" y2="23"/><line x1="20" y1="9" x2="23" y2="9"/><line x1="20" y1="14" x2="23" y2="14"/><line x1="1" y1="9" x2="4" y2="9"/><line x1="1" y1="14" x2="4" y2="14"/>
               </svg>
-              Recursos del sistema
+              {t('home.systemResources')}
             </div>
             <div className="sys-stats-row">
               <div className="sys-stat">
@@ -925,7 +935,7 @@ export default function HomeView({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M4 11a9 9 0 0 1 9 9"/><path d="M4 4a16 16 0 0 1 16 16"/><circle cx="5" cy="19" r="1" fill="var(--accent)"/>
               </svg>
-              Novedades de Minecraft
+              {t('home.minecraftNews')}
             </div>
             <div className="news-grid">
               {news.map((item, i) => (
@@ -938,7 +948,7 @@ export default function HomeView({
                   <div className="news-body">
                     <div className="news-version">{item.version || item.type}</div>
                     <div className="news-title">{item.title}</div>
-                    <div className="news-date">{item.date ? new Date(item.date).toLocaleDateString('es-ES', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</div>
+                    <div className="news-date">{item.date ? new Date(item.date).toLocaleDateString(locale, { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</div>
                   </div>
                 </div>
               ))}
@@ -953,19 +963,19 @@ export default function HomeView({
 
         {/* Cuenta — quick-switch */}
         <div style={{ position: 'relative' }}>
-          <div className="right-section-title">Jugando como</div>
+          <div className="right-section-title">{t('home.playingAs')}</div>
           {activeAccount ? (
             <div className="account-panel">
               <div
                 className="account-select-row"
                 onClick={() => setShowSwitch(s => !s)}
-                title="Cambiar cuenta"
+                title={t('home.switchAccount')}
               >
                 <PlayerAvatar account={activeAccount} size={36} />
                 <div className="account-meta">
                   <div className="account-name">{activeAccount.username}</div>
                   <div className="account-type">
-                    {activeAccount.type === 'offline' ? 'Cuenta offline' : 'Cuenta Microsoft'}
+                    {activeAccount.type === 'offline' ? t('home.offlineAccount') : t('home.microsoftAccount')}
                   </div>
                 </div>
                 <span className={`account-chevron ${showSwitch ? 'open' : ''}`}>⌄</span>
@@ -988,9 +998,9 @@ export default function HomeView({
             </div>
           ) : (
             <div className="no-account-panel">
-              <p>Sin cuenta</p>
+              <p>{t('home.noAccount')}</p>
               <button className="btn btn-primary btn-sm" onClick={() => setActiveView('accounts')}>
-                + Añadir
+                + {t('home.add')}
               </button>
             </div>
           )}
@@ -999,14 +1009,14 @@ export default function HomeView({
         {/* RAM */}
         {settings && (
           <div>
-            <div className="right-section-title">Memoria RAM</div>
+            <div className="right-section-title">{t('home.ramMemory')}</div>
             <div className="ram-panel">
               <div className="ram-row">
-                <span>RAM del sistema</span>
+                <span>{t('home.systemRam')}</span>
                 <span className="ram-value ram-total">{systemRam ? `${systemRam.totalMB} MB` : '...'}</span>
               </div>
               <div className="ram-row">
-                <span>Asignada al juego</span>
+                <span>{t('home.allocatedToGame')}</span>
                 <span className="ram-value">{settings.ramMax} MB</span>
               </div>
               <div className="ram-bar-wrap">
@@ -1020,7 +1030,7 @@ export default function HomeView({
                   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}>
                     <line x1="9" y1="18" x2="15" y2="18"/><line x1="10" y1="22" x2="14" y2="22"/><path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14"/>
                   </svg>
-                  Recomendado: <strong>{systemRam.recommended} MB</strong>
+                  {t('home.recommended')} <strong>{systemRam.recommended} MB</strong>
                 </div>
               )}
             </div>
@@ -1029,18 +1039,18 @@ export default function HomeView({
 
         {/* Acciones rápidas */}
         <div>
-          <div className="right-section-title">Acciones</div>
+          <div className="right-section-title">{t('home.actions')}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             <button className="btn btn-ghost" style={{ justifyContent: 'flex-start', fontSize: 12 }}
               onClick={() => setActiveView('settings')}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}>
                 <circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M19.07 19.07l-1.41-1.41M4.93 19.07l1.41-1.41M21 12h-2M5 12H3M12 21v-2M12 5V3"/>
               </svg>
-              Ajustes
+              {t('home.settings')}
             </button>
             <button className="btn btn-ghost" style={{ justifyContent: 'flex-start', fontSize: 12 }}
               onClick={() => setActiveView('console')}>
-              ≡ Consola
+              ≡ {t('home.console')}
             </button>
           </div>
         </div>
@@ -1052,7 +1062,7 @@ export default function HomeView({
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
-              Actividad reciente
+              {t('home.recentActivity')}
             </div>
             <div className="activity-feed">
               {activity.slice(0, 6).map((item, i) => (
@@ -1072,8 +1082,8 @@ export default function HomeView({
       {launching && progress && (
         <div className="launch-overlay">
           <div className="launch-overlay-content">
-            <div className="launch-overlay-title">Preparando Minecraft</div>
-            <div className="launch-overlay-stage">{launchStage}</div>
+            <div className="launch-overlay-title">{t('home.preparingMinecraft')}</div>
+            <div className="launch-overlay-stage">{t('home.' + launchStage)}</div>
             <div className="launch-progress-bar">
               <div className="launch-progress-fill" style={{ width: `${Math.round((progress.task / Math.max(progress.total, 1)) * 100)}%` }} />
             </div>
@@ -1091,7 +1101,7 @@ export default function HomeView({
           <div className="share-modal-overlay" onClick={() => { setShareModal(null); setImportCode('') }}>
             <div className="share-modal-panel" onClick={e => e.stopPropagation()}>
               <div className="share-modal-header">
-                <span className="share-modal-title">Compartir instancia</span>
+                <span className="share-modal-title">{t('home.shareInstance')}</span>
                 <button className="share-modal-close" onClick={() => { setShareModal(null); setImportCode('') }}>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                     <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -1101,7 +1111,7 @@ export default function HomeView({
               <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
                 <div>
                   <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>
-                    Código de <strong style={{ color: 'var(--text-primary)' }}>{shareModal.name}</strong>
+                    {richText(t('home.shareCodeOf'), { name: shareModal.name }, { color: 'var(--text-primary)' })}
                   </label>
                   <textarea
                     readOnly
@@ -1111,18 +1121,18 @@ export default function HomeView({
                   <button
                     className="btn btn-primary btn-sm"
                     style={{ marginTop: 8 }}
-                    onClick={() => navigator.clipboard.writeText(encoded).then(() => notify?.({ message: 'Código copiado', type: 'success' }))}
+                    onClick={() => navigator.clipboard.writeText(encoded).then(() => notify?.({ message: t('home.codeCopied'), type: 'success' }))}
                   >
-                    Copiar código
+                    {t('home.copyCode')}
                   </button>
                 </div>
                 <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: 0 }} />
                 <div>
-                  <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>Importar código de otra instancia</label>
+                  <label style={{ fontSize: 12, color: 'var(--text-secondary)', marginBottom: 6, display: 'block' }}>{t('home.importCodeLabel')}</label>
                   <textarea
                     value={importCode}
                     onChange={e => setImportCode(e.target.value)}
-                    placeholder="Pega aquí el código..."
+                    placeholder={t('home.pasteCodePlaceholder')}
                     style={{ width: '100%', height: 60, fontFamily: 'monospace', fontSize: 11, resize: 'none', background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-primary)', padding: '8px 10px', boxSizing: 'border-box' }}
                   />
                   <button
@@ -1136,17 +1146,17 @@ export default function HomeView({
                           const insts = await window.eclipse.loadInstances()
                           setInstances(insts)
                           if (res.instance) setActiveInstance(res.instance)
-                          notify?.({ message: 'Instancia importada', type: 'success' })
+                          notify?.({ message: t('home.instanceImported'), type: 'success' })
                           setShareModal(null); setImportCode('')
                         } else {
-                          notify?.({ message: 'Error al importar: ' + res.error, type: 'error' })
+                          notify?.({ message: t('home.importFailed', { error: res.error }), type: 'error' })
                         }
                       } catch {
-                        notify?.({ message: 'Código inválido', type: 'error' })
+                        notify?.({ message: t('home.invalidCode'), type: 'error' })
                       }
                     }}
                   >
-                    Importar
+                    {t('home.import')}
                   </button>
                 </div>
               </div>

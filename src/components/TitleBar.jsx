@@ -1,5 +1,6 @@
 import './TitleBar.css'
 import EclipseLogo from './EclipseLogo'
+import { useT } from '../i18n'
 
 /* ── Icono Cerrar — x-icon de itshover ── */
 function IconClose() {
@@ -51,7 +52,8 @@ function flash(e) {
   setTimeout(() => btn.classList.remove('wc-clicked'), 400)
 }
 
-export default function TitleBar({ breadcrumb = 'Inicio' }) {
+export default function TitleBar({ breadcrumb }) {
+  const t = useT()
   return (
     <div className="titlebar">
       {/* Logo */}
@@ -62,12 +64,12 @@ export default function TitleBar({ breadcrumb = 'Inicio' }) {
 
       {/* Nav arrows */}
       <div className="titlebar-nav">
-        <button title="Atrás">‹</button>
-        <button title="Adelante">›</button>
+        <button title={t('shell.back')}>‹</button>
+        <button title={t('shell.forward')}>›</button>
       </div>
 
       {/* Breadcrumb */}
-      <span className="titlebar-breadcrumb">▷ {breadcrumb}</span>
+      <span className="titlebar-breadcrumb">▷ {breadcrumb ?? t('shell.navHome')}</span>
 
       <div className="titlebar-drag" />
 
@@ -75,15 +77,15 @@ export default function TitleBar({ breadcrumb = 'Inicio' }) {
       <div className="titlebar-controls">
         <button className="wc wc-close" onClick={e => { flash(e); window.eclipse.close() }}>
           <IconClose />
-          <span className="wc-label">Cerrar</span>
+          <span className="wc-label">{t('shell.close')}</span>
         </button>
         <button className="wc wc-min" onClick={e => { flash(e); window.eclipse.minimize() }}>
           <IconMinimize />
-          <span className="wc-label">Minimizar</span>
+          <span className="wc-label">{t('shell.minimize')}</span>
         </button>
         <button className="wc wc-max" onClick={e => { flash(e); window.eclipse.maximize() }}>
           <IconMaximize />
-          <span className="wc-label">Maximizar</span>
+          <span className="wc-label">{t('shell.maximize')}</span>
         </button>
       </div>
     </div>

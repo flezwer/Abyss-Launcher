@@ -1,6 +1,13 @@
 import { useState, useRef } from 'react'
 import './AccountsView.css'
 import PlayerAvatar from '../components/PlayerAvatar'
+import { useT } from '../i18n'
+
+// Renders a translated string with a single {placeholder} replaced by a React node.
+const withSlot = (str, node) => {
+  const [before, after = ''] = str.split(/\{\w+\}/)
+  return <>{before}{node}{after}</>
+}
 
 const IcOffline = () => (
   <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}>
@@ -29,6 +36,7 @@ const IcMicrosoft = () => (
 )
 
 export default function AccountsView({ accounts, activeAccount, setActiveAccount, saveAccounts }) {
+  const t = useT()
   const [mode, setMode] = useState(null) // 'offline' | 'premium'
   const [username, setUsername] = useState('')
   const [previewAcc, setPreviewAcc] = useState(null)
@@ -53,9 +61,9 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
       setSkinPreview(dataUrl)
       try {
         await window.eclipse.saveSkin({ username: previewAcc.username, base64 })
-        setSkinMsg('Skin guardada')
+        setSkinMsg('skinSaved')
       } catch {
-        setSkinMsg('Error al guardar skin')
+        setSkinMsg('skinSaveError')
       }
       setTimeout(() => setSkinMsg(''), 3000)
     }
@@ -119,11 +127,11 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
-          Cuentas
+          {t('accounts.title')}
         </h2>
         <div className="account-add-btns">
           <button className="btn btn-ghost" onClick={() => { setMode('add'); setAuthType('offline') }}>
-            + Añadir cuenta
+            + {t('accounts.addAccount')}
           </button>
         </div>
       </div>
@@ -131,26 +139,26 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
       {/* Formulario añadir cuenta */}
       {mode === 'add' && (
         <div className="card add-form">
-          <h3>Nueva cuenta</h3>
+          <h3>{t('accounts.newAccount')}</h3>
           <div className="auth-type-toggle" style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
-            <button className={`auth-btn btn btn-sm ${authType === 'offline' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setAuthType('offline')}><IcOfflineBtn />Offline</button>
+            <button className={`auth-btn btn btn-sm ${authType === 'offline' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setAuthType('offline')}><IcOfflineBtn />{t('accounts.offline')}</button>
             <button className={`auth-btn btn btn-sm ${authType === 'microsoft' ? 'btn-primary' : 'btn-ghost'}`} onClick={() => setAuthType('microsoft')}><IcMicrosoft />Microsoft</button>
           </div>
 
           {authType === 'offline' && (
             <>
-              <p className="form-note">Podrás jugar en servidores offline y singleplayer. No requiere cuenta de Mojang.</p>
+              <p className="form-note">{t('accounts.offlineNote')}</p>
               <div className="form-row">
                 <input
                   autoFocus
-                  placeholder="Nombre de usuario"
+                  placeholder={t('accounts.usernamePlaceholder')}
                   value={username}
                   onChange={e => setUsername(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && addOffline()}
                   maxLength={16}
                 />
-                <button className="btn btn-primary" onClick={addOffline}>Añadir</button>
-                <button className="btn btn-ghost" onClick={() => { setMode(null); setUsername('') }}>Cancelar</button>
+                <button className="btn btn-primary" onClick={addOffline}>{t('accounts.add')}</button>
+                <button className="btn btn-ghost" onClick={() => { setMode(null); setUsername('') }}>{t('accounts.cancel')}</button>
               </div>
             </>
           )}
@@ -159,42 +167,42 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
             <>
               {msStep === 'idle' && (
                 <>
-                  <p className="form-note">Inicia sesión con tu cuenta de Microsoft para jugar con tu perfil real de Minecraft.</p>
+                  <p className="form-note">{t('accounts.msNote')}</p>
                   <div className="form-row">
                     <button className="btn btn-primary" onClick={startMsAuth}>
-                      <IcMicrosoft />Iniciar sesión con Microsoft
+                      <IcMicrosoft />{t('accounts.msSignIn')}
                     </button>
-                    <button className="btn btn-ghost" onClick={() => setMode(null)}>Cancelar</button>
+                    <button className="btn btn-ghost" onClick={() => setMode(null)}>{t('accounts.cancel')}</button>
                   </div>
                 </>
               )}
 
               {msStep === 'loading' && (
-                <p className="form-note" style={{ color: 'var(--accent-bright)' }}>Conectando con Microsoft...</p>
+                <p className="form-note" style={{ color: 'var(--accent-bright)' }}>{t('accounts.msConnecting')}</p>
               )}
 
               {msStep === 'waiting' && msCode && (
                 <div className="ms-device-card">
-                  <p className="form-note">Ingresa este código en <strong>microsoft.com/link</strong></p>
+                  <p className="form-note">{withSlot(t('accounts.msEnterCode'), <strong>microsoft.com/link</strong>)}</p>
                   <div className="ms-user-code">{msCode.userCode}</div>
                   <div className="form-row" style={{ marginTop: 10 }}>
                     <button className="btn btn-primary btn-sm" onClick={() => window.eclipse.openExternal(msCode.verificationUri)}>
-                      Abrir microsoft.com/link →
+                      {t('accounts.msOpenLink', { site: 'microsoft.com/link' })} →
                     </button>
-                    <button className="btn btn-ghost btn-sm" onClick={cancelMs}>Cancelar</button>
+                    <button className="btn btn-ghost btn-sm" onClick={cancelMs}>{t('accounts.cancel')}</button>
                   </div>
                   <p className="form-note" style={{ marginTop: 8, color: 'var(--text-muted)' }}>
-                    <span className="ms-spinner" /> Esperando confirmación...
+                    <span className="ms-spinner" /> {t('accounts.msWaiting')}
                   </p>
                 </div>
               )}
 
               {msStep === 'error' && (
                 <>
-                  <p className="form-note" style={{ color: '#f87171' }}>{msError}</p>
+                  <p className="form-note" style={{ color: '#f87171' }}>{msError || t('accounts.msErrorGeneric')}</p>
                   <div className="form-row">
-                    <button className="btn btn-primary btn-sm" onClick={startMsAuth}>Reintentar</button>
-                    <button className="btn btn-ghost btn-sm" onClick={() => { cancelMs(); setMode(null) }}>Cancelar</button>
+                    <button className="btn btn-primary btn-sm" onClick={startMsAuth}>{t('accounts.retry')}</button>
+                    <button className="btn btn-ghost btn-sm" onClick={() => { cancelMs(); setMode(null) }}>{t('accounts.cancel')}</button>
                   </div>
                 </>
               )}
@@ -210,7 +218,7 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.4}}>
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
             </svg>
-            <p>No hay cuentas. Añade una para empezar.</p>
+            <p>{t('accounts.empty')}</p>
           </div>
         )}
         {accounts.map(acc => (
@@ -223,13 +231,13 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
             <div className="account-row-info">
               <div className="account-name">{acc.username}</div>
               <span className={`badge ${acc.type === 'offline' ? 'badge-offline' : 'badge-premium'}`}>
-                {acc.type === 'offline' ? <><IcOffline />Offline</> : <><IcPremium />Premium</>}
+                {acc.type === 'offline' ? <><IcOffline />{t('accounts.offline')}</> : <><IcPremium />{t('accounts.premium')}</>}
               </span>
             </div>
             {activeAccount?.id === acc.id && (
               <span className="active-indicator">
                 <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:3}}><polyline points="20 6 9 17 4 12"/></svg>
-                Activa
+                {t('accounts.active')}
               </span>
             )}
             <button
@@ -239,13 +247,13 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{display:'inline',verticalAlign:'middle',marginRight:4}}>
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
               </svg>
-              Skin
+              {t('accounts.skin')}
             </button>
             <button
               className="btn btn-danger btn-sm"
               onClick={e => { e.stopPropagation(); removeAccount(acc.id) }}
             >
-              Eliminar
+              {t('accounts.remove')}
             </button>
           </div>
         ))}
@@ -255,7 +263,7 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
       {previewAcc && (
         <div className="skin-preview-panel card">
           <div className="skin-preview-header">
-            <span className="skin-preview-title">Preview: {previewAcc.username}</span>
+            <span className="skin-preview-title">{t('accounts.previewTitle', { name: previewAcc.username })}</span>
             <button className="btn btn-ghost btn-sm" onClick={() => setPreviewAcc(null)}>
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
@@ -265,31 +273,31 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
               <div className="skin-img-wrap">
                 <img
                   src={`https://crafatar.com/avatars/${encodeURIComponent(previewAcc.uuid || previewAcc.username)}?size=128&overlay`}
-                  alt="Cabeza"
+                  alt={t('accounts.head')}
                   className="skin-img-head"
                   onError={e => e.target.style.display='none'}
                 />
-                <span className="skin-img-label">Cabeza</span>
+                <span className="skin-img-label">{t('accounts.head')}</span>
               </div>
               <div className="skin-img-wrap">
                 <img
                   src={`https://crafatar.com/renders/body/${encodeURIComponent(previewAcc.uuid || previewAcc.username)}?scale=4&overlay`}
-                  alt="Cuerpo"
+                  alt={t('accounts.body')}
                   className="skin-img-body"
                   onError={e => e.target.style.display='none'}
                 />
-                <span className="skin-img-label">Cuerpo</span>
+                <span className="skin-img-label">{t('accounts.body')}</span>
               </div>
             </div>
             <div className="skin-preview-info">
               <div className="account-name">{previewAcc.username}</div>
               <span className={`badge ${previewAcc.type === 'offline' ? 'badge-offline' : 'badge-premium'}`}>
-                {previewAcc.type === 'offline' ? <><IcOffline />Offline</> : <><IcPremium />Premium</>}
+                {previewAcc.type === 'offline' ? <><IcOffline />{t('accounts.offline')}</> : <><IcPremium />{t('accounts.premium')}</>}
               </span>
               <p className="form-note" style={{ marginTop: 8 }}>
                 {previewAcc.type === 'offline'
-                  ? 'Cuenta offline — skin generada por nombre.'
-                  : 'Cuenta Microsoft — skin real.'}
+                  ? t('accounts.offlineSkinNote')
+                  : t('accounts.msSkinNote')}
               </p>
               {previewAcc.type === 'offline' && (
                 <div className="skin-upload-section">
@@ -301,17 +309,17 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
                     onChange={handleSkinUpload}
                   />
                   <button className="btn btn-ghost btn-sm" onClick={() => skinInputRef.current?.click()}>
-                    <IcSkin />Subir skin
+                    <IcSkin />{t('accounts.uploadSkin')}
                   </button>
                   {skinPreview && (
                     <img
                       src={skinPreview}
-                      alt="Skin personalizada"
+                      alt={t('accounts.customSkinAlt')}
                       className="skin-custom-preview"
                       style={{ width: 16, height: 32, imageRendering: 'pixelated', marginLeft: 8, verticalAlign: 'middle' }}
                     />
                   )}
-                  {skinMsg && <span className="skin-msg" style={{ marginLeft: 8, fontSize: 12, color: 'var(--accent-bright)' }}>{skinMsg}</span>}
+                  {skinMsg && <span className="skin-msg" style={{ marginLeft: 8, fontSize: 12, color: 'var(--accent-bright)' }}>{t(`accounts.${skinMsg}`)}</span>}
                 </div>
               )}
             </div>

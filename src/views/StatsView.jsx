@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
 import './StatsView.css'
 import { fmtTime } from '../utils/time'
+import { useI18n } from '../i18n'
 
 export default function StatsView() {
+  const { t, locale } = useI18n()
   const [stats, setStats] = useState(null)
   const [playtime, setPlaytime] = useState({})
   const [weekData, setWeekData] = useState([])
@@ -22,13 +24,13 @@ export default function StatsView() {
         const d = new Date()
         d.setDate(d.getDate() - i)
         const date = d.toISOString().slice(0, 10)
-        const label = d.toLocaleDateString('es-ES', { weekday: 'short' })
+        const label = d.toLocaleDateString(locale, { weekday: 'short' })
         const found = stored.find(s => s.date === date)
         days.push({ date, label, ms: found?.ms || 0, isToday: date === today })
       }
       setWeekData(days)
     } catch {}
-  }, [])
+  }, [locale])
 
   const sorted = Object.values(playtime).sort((a,b) => b.totalMs - a.totalMs)
 
@@ -39,7 +41,7 @@ export default function StatsView() {
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
             <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
-          Estadísticas
+          {t('stats.title')}
         </h2>
       </div>
 
@@ -52,7 +54,7 @@ export default function StatsView() {
               </svg>
             </div>
             <div className="stat-value">{fmtTime(stats.totalMs)}</div>
-            <div className="stat-label">Tiempo total jugado</div>
+            <div className="stat-label">{t('stats.totalPlaytime')}</div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">
@@ -61,7 +63,7 @@ export default function StatsView() {
               </svg>
             </div>
             <div className="stat-value">{stats.totalSessions}</div>
-            <div className="stat-label">Sesiones totales</div>
+            <div className="stat-label">{t('stats.totalSessions')}</div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">
@@ -70,7 +72,7 @@ export default function StatsView() {
               </svg>
             </div>
             <div className="stat-value">{stats.topVersion}</div>
-            <div className="stat-label">Versión más jugada</div>
+            <div className="stat-label">{t('stats.topVersion')}</div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">
@@ -79,7 +81,7 @@ export default function StatsView() {
               </svg>
             </div>
             <div className="stat-value">{stats.totalInstances}</div>
-            <div className="stat-label">Instancias</div>
+            <div className="stat-label">{t('stats.instances')}</div>
           </div>
           <div className="stat-card">
             <div className="stat-icon">
@@ -88,7 +90,7 @@ export default function StatsView() {
               </svg>
             </div>
             <div className="stat-value">{stats.totalMods}</div>
-            <div className="stat-label">Mods instalados</div>
+            <div className="stat-label">{t('stats.modsInstalled')}</div>
           </div>
         </div>
       )}
@@ -99,7 +101,7 @@ export default function StatsView() {
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
             </svg>
-            Por cuenta y versión
+            {t('stats.byAccountVersion')}
           </h3>
           <div className="playtime-bars">
             {sorted.map((p, i) => {
@@ -127,14 +129,14 @@ export default function StatsView() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
               </svg>
-              Últimos 14 días
+              {t('stats.last14Days')}
             </span>
             <span className="week-total-label">
               {(() => {
                 const totalMs = weekData.reduce((s, d) => s + d.ms, 0)
                 const h = Math.floor(totalMs / 3600000)
                 const m = Math.floor((totalMs % 3600000) / 60000)
-                return totalMs > 0 ? `Total: ${h > 0 ? `${h}h ` : ''}${m}m` : ''
+                return totalMs > 0 ? t('stats.periodTotal', { time: `${h > 0 ? `${h}h ` : ''}${m}m` }) : ''
               })()}
             </span>
           </h3>
@@ -178,7 +180,7 @@ export default function StatsView() {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"/><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"/><path d="M4 22h16"/><path d="M18 2H6v7a6 6 0 0 0 12 0V2z"/>
               </svg>
-              Tiempo por versión
+              {t('stats.timeByVersion')}
             </h3>
             <div className="playtime-bars">
               {verList.map((v, i) => {
@@ -207,7 +209,7 @@ export default function StatsView() {
           <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" style={{opacity:0.3}}>
             <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
           </svg>
-          <p>Juega una partida para ver tus estadísticas aquí.</p>
+          <p>{t('stats.empty')}</p>
         </div>
       )}
     </div>
