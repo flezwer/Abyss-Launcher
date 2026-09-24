@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist-electron/
+.agents/
+.claude/
+.impeccable/
+graphify-out/
+skills-lock.json
+CUsersMartinDesktopeclipse-launcher.claude
+*.bak

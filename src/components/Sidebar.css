@@ -1,0 +1,294 @@
+.sidebar {
+  width: 148px;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 0;
+  flex-shrink: 0;
+  animation: fadeInLeft 0.35s ease;
+  transition: width 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  flex: 1;
+  width: 100%;
+  padding: 0 6px;
+}
+
+.sidebar-item {
+  position: relative;
+  width: 100%;
+  height: 40px;
+  border-radius: var(--radius-md);
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 0 10px;
+  transition: background var(--transition), color var(--transition), transform var(--transition);
+}
+
+.sidebar-nav-label {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-item:hover {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+}
+
+.sidebar-item.active {
+  background: linear-gradient(90deg, rgba(124,106,247,0.18) 0%, rgba(124,106,247,0.06) 100%);
+  color: var(--accent-bright);
+}
+
+/* Active bar on left */
+.sidebar-item.active::before {
+  content: '';
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--accent);
+  border-radius: 0 3px 3px 0;
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: scaleIn 0.2s ease;
+}
+
+/* Tooltip */
+.sidebar-item::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  left: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--bg-raised);
+  border: 1px solid var(--border-hover);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'Qrafty', sans-serif;
+  padding: 5px 10px;
+  border-radius: var(--radius-md);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  transform: translateY(-50%) translateX(-4px);
+  z-index: 99;
+}
+
+.sidebar-item:hover::after {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0);
+}
+
+.sidebar-bottom {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 8px 6px;
+  gap: 4px;
+}
+
+.sidebar-version {
+  font-size: 10px;
+  color: var(--text-muted);
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  letter-spacing: 0.05em;
+}
+
+/* ══════════════════════════════════════════
+   Iconos SVG — animaciones por tipo
+   ══════════════════════════════════════════ */
+
+.nav-icon {
+  display: block;
+  transition: filter 0.18s ease;
+  overflow: visible;
+}
+
+/* ── Inicio: anillo orbital gira en hover ── */
+@keyframes orbitSpin {
+  from { transform: rotateX(70deg) rotate(0deg); }
+  to   { transform: rotateX(70deg) rotate(360deg); }
+}
+
+.sidebar-item:hover .icon-ring {
+  animation: orbitSpin 1.8s linear infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* ── Cuentas: halo exterior pulsa en hover ── */
+@keyframes haloExpand {
+  0%   { r: 8.5; opacity: 0.25; }
+  50%  { r: 9.5; opacity: 0.5;  }
+  100% { r: 8.5; opacity: 0.25; }
+}
+
+.sidebar-item:hover .icon-pulse-ring {
+  animation: haloExpand 1.2s ease-in-out infinite;
+  transform-origin: center;
+  transform-box: fill-box;
+}
+
+/* ── Mods: capa superior sube, inferior baja ── */
+@keyframes stackTopLift {
+  0%   { transform: translateY(0)   scale(1); }
+  50%  { transform: translateY(-3px) scale(1.06); }
+  100% { transform: translateY(-2px) scale(1.04); }
+}
+@keyframes stackTopDrop {
+  from { transform: translateY(-2px) scale(1.04); }
+  to   { transform: translateY(0)    scale(1); }
+}
+@keyframes stackBotDim {
+  from { opacity: 1; }
+  to   { opacity: 0.55; }
+}
+@keyframes stackBotRestore {
+  from { opacity: 0.55; }
+  to   { opacity: 1; }
+}
+
+.sidebar-item:hover .icon-stack-top {
+  animation: stackTopLift 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+.sidebar-item:not(:hover) .icon-stack-top {
+  animation: stackTopDrop 0.25s ease-in-out forwards;
+}
+.sidebar-item:hover .icon-stack-bottom {
+  animation: stackBotDim 0.3s ease forwards;
+}
+.sidebar-item:not(:hover) .icon-stack-bottom {
+  animation: stackBotRestore 0.25s ease forwards;
+}
+
+/* ── Consola: cursor parpadea siempre ── */
+@keyframes blink {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0;   }
+}
+
+.icon-cursor {
+  animation: blink 1.1s step-end infinite;
+}
+
+/* Activo: cursor más brillante */
+.sidebar-item.active .icon-cursor {
+  stroke: var(--accent-bright);
+}
+
+/* ── Settings: engranaje gira en hover ── */
+@keyframes gearSpin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(90deg); }
+}
+
+.sidebar-item:hover .icon-gear-rotator {
+  animation: gearSpin 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.sidebar-item.active .icon-gear-rotator {
+  animation: gearSpin 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+/* ── Estado activo: glow del ícono ── */
+.sidebar-item.active .nav-icon {
+  filter: drop-shadow(0 0 4px var(--accent-glow));
+}
+
+/* ── Hover: glow leve ── */
+.sidebar-item:hover .nav-icon {
+  filter: drop-shadow(0 0 3px rgba(167, 139, 250, 0.4));
+}
+
+/* ── Bloque 11: Notes button ─────────────────────────────────────────────────── */
+.sidebar-notes-btn {
+  background: none; border: none; cursor: pointer;
+  font-size: 18px; padding: 6px; border-radius: 8px;
+  transition: background 0.15s; opacity: 0.6;
+}
+.sidebar-notes-btn:hover, .sidebar-notes-btn.active { opacity: 1; background: var(--accent-dim); }
+
+/* ── Bloque 9: Update notice ─────────────────────────────────────────────────── */
+.update-notice {
+  margin: 8px;
+  padding: 8px 10px;
+  background: var(--accent-dim);
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  font-size: 11px;
+  color: var(--accent-bright);
+  cursor: pointer;
+  text-align: center;
+  animation: pulse 2s infinite;
+}
+.update-notice:hover { background: var(--accent); color: #fff; }
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* ── Bloque 12: Sidebar colapsable ─────────────────────────────────────────── */
+.sidebar--collapsed {
+  width: 52px !important;
+}
+.sidebar--collapsed .sidebar-nav-label,
+.sidebar--collapsed .mods-navbtn-label,
+.sidebar--collapsed .sidebar-label,
+.sidebar--collapsed .update-notice span:last-child,
+.sidebar--collapsed .sidebar-notes-btn .sidebar-nav-label {
+  display: none !important;
+}
+.sidebar--collapsed .sidebar-item {
+  justify-content: center;
+  padding: 10px 0;
+}
+.sidebar--collapsed .sidebar-nav {
+  padding: 0 4px;
+}
+.sidebar--collapsed .sidebar-bottom {
+  align-items: center;
+  padding: 8px 4px;
+}
+.sidebar--collapsed .sidebar-notes-btn {
+  justify-content: center;
+  width: 100%;
+}
+.sidebar--collapsed .update-notice {
+  padding: 8px 4px;
+  text-align: center;
+}
+.sidebar-collapse-btn {
+  background: none; border: none; cursor: pointer;
+  color: var(--text-muted); padding: 8px;
+  border-radius: 8px; width: 100%;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.sidebar-collapse-btn:hover { background: var(--accent-dim); color: var(--accent-bright); }
+.sidebar-notes-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}

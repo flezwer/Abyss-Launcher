@@ -1,0 +1,89 @@
+/* ═══════════════════════════════════════════
+   EclipseLogo — Animaciones del logo SVG
+   ═══════════════════════════════════════════ */
+
+/* Pulso del halo exterior */
+@keyframes haloPulse {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50%       { opacity: 0.9; transform: scale(1.08); }
+}
+
+/* Brillo del anillo de plasma */
+@keyframes ringGlow {
+  0%, 100% { stroke-opacity: 0.75; filter: drop-shadow(0 0 2px var(--accent)); }
+  50%       { stroke-opacity: 1;    filter: drop-shadow(0 0 6px var(--accent-bright)) drop-shadow(0 0 14px var(--accent)); }
+}
+
+/* Arco brillante parpadeando */
+@keyframes arcFlash {
+  0%, 100% { stroke-opacity: 0.6; }
+  40%       { stroke-opacity: 1;   filter: drop-shadow(0 0 4px var(--accent-bright)); }
+  70%       { stroke-opacity: 0.4; }
+}
+
+/* Corona solar parpadeando */
+@keyframes coronaPulse {
+  0%, 100% { opacity: 0.35; }
+  50%       { opacity: 0.7; }
+}
+
+/* Rotación de las partículas orbitales */
+@keyframes orbitSpin1 {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes orbitSpin2 {
+  from { transform: rotate(180deg); }
+  to   { transform: rotate(540deg); }
+}
+
+/* ── Logo base ── */
+.eclipse-logo {
+  display: block;
+  flex-shrink: 0;
+  overflow: visible;
+}
+
+/* ── Halo ── */
+.eclipse-halo {
+  transform-origin: 50% 50%;
+  animation: haloPulse 3s ease-in-out infinite;
+}
+
+/* ── Anillo ── */
+.eclipse-ring {
+  animation: ringGlow 2.4s ease-in-out infinite;
+}
+
+/* ── Arco ── */
+.eclipse-arc {
+  animation: arcFlash 2.8s ease-in-out infinite;
+}
+
+/* ── Corona ── */
+.eclipse-corona {
+  animation: coronaPulse 2s ease-in-out infinite;
+}
+
+/* ── Órbitas ── */
+.eclipse-orbit {
+  /* Pivot en el centro del SVG — se sobreescribe inline con style */
+}
+
+.orbit-1 {
+  transform-origin: 50% 50%;
+  animation: orbitSpin1 4s linear infinite;
+}
+
+.orbit-2 {
+  transform-origin: 50% 50%;
+  animation: orbitSpin2 6.5s linear infinite;
+}
+
+/* ── Hover: el logo completo brilla más ── */
+.eclipse-logo:hover .eclipse-ring {
+  animation-duration: 0.8s;
+}
+.eclipse-logo:hover .eclipse-halo {
+  animation-duration: 1s;
+}

@@ -1,0 +1,30 @@
+.player-avatar {
+  border-radius: 6px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated; /* Mantiene el look pixel-art */
+}
+
+.player-avatar--img {
+  object-fit: cover;
+  background: var(--bg-raised);
+  box-shadow: 0 0 8px var(--accent-glow);
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+.player-avatar--img:hover {
+  box-shadow: 0 0 14px var(--accent-glow);
+  transform: scale(1.04);
+}
+
+.player-avatar--fallback {
+  background: linear-gradient(135deg, var(--accent-dim), var(--accent-bright));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: #fff;
+  box-shadow: 0 0 10px var(--accent-glow);
+  font-size: calc(var(--size, 38px) * 0.42);
+}

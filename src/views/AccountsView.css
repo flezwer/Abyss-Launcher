@@ -1,0 +1,196 @@
+.view-container {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  height: 100%;
+  animation: fadeIn 0.25s ease;
+}
+
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.view-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.account-add-btns { display: flex; gap: 8px; }
+
+.add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  animation: scaleIn 0.2s ease;
+}
+.add-form h3 { font-size: 14px; font-weight: 600; }
+.form-note { color: var(--text-secondary); font-size: 12px; line-height: 1.5; }
+.form-row { display: flex; gap: 8px; }
+.form-row input { flex: 1; }
+
+.accounts-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), transform var(--transition);
+}
+.account-row:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  transform: translateX(3px);
+}
+.account-row--active {
+  border-color: rgba(124,106,247,0.4);
+  background: rgba(124,106,247,0.05);
+}
+
+.account-avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, var(--accent-dim), var(--accent-bright));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  color: #fff;
+  flex-shrink: 0;
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.account-name { font-weight: 600; font-size: 14px; margin-bottom: 3px; }
+.account-row-info { flex: 1; }
+
+.active-indicator {
+  font-size: 12px;
+  color: var(--accent-bright);
+  font-weight: 600;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 60px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  text-align: center;
+  animation: fadeIn 0.4s ease;
+}
+
+/* ── Skin preview ── */
+.skin-preview-panel {
+  animation: scaleIn 0.2s ease;
+}
+
+.skin-preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.skin-preview-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.skin-preview-body {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.skin-preview-imgs {
+  display: flex;
+  gap: 16px;
+  align-items: flex-end;
+}
+
+.skin-img-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.skin-img-head {
+  width: 80px;
+  height: 80px;
+  image-rendering: pixelated;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  box-shadow: 0 0 14px var(--accent-glow);
+}
+
+.skin-img-body {
+  height: 120px;
+  width: auto;
+  image-rendering: pixelated;
+  border-radius: 4px;
+  filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
+}
+
+.skin-img-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.skin-preview-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+}
+
+/* fix account-row--active color to use CSS var */
+.account-row--active {
+  border-color: var(--border-hover) !important;
+  background: var(--accent-glow) !important;
+}
+
+/* ── Microsoft device-code flow ── */
+.ms-device-card {
+  padding: 12px 0 4px;
+}
+.ms-user-code {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  color: var(--accent-bright);
+  background: rgba(29,111,255,0.1);
+  border: 1px solid rgba(29,111,255,0.3);
+  border-radius: 8px;
+  padding: 10px 20px;
+  display: inline-block;
+  margin: 6px 0;
+  font-family: monospace;
+}
+.ms-spinner {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--text-muted);
+  border-top-color: var(--accent-bright);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

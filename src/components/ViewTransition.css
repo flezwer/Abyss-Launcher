@@ -1,0 +1,23 @@
+.vt-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.vt-exit {
+  animation: vtExit 0.15s ease-in forwards;
+}
+.vt-enter {
+  animation: vtEnter 0.22s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes vtExit {
+  from { opacity: 1; transform: translateX(0)  scale(1);    }
+  to   { opacity: 0; transform: translateX(-16px) scale(0.97); }
+}
+
+@keyframes vtEnter {
+  from { opacity: 0; transform: translateX(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateX(0)    scale(1);    }
+}

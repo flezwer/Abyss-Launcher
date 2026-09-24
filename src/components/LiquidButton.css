@@ -1,0 +1,158 @@
+/* ═══════════════════════════════════════════
+   LiquidButton — Liquid Fill Animation
+   ═══════════════════════════════════════════ */
+
+@keyframes lb-wave {
+  0%   { transform: translateX(0) translateY(0); }
+  50%  { transform: translateX(-25%) translateY(-5px); }
+  100% { transform: translateX(-50%) translateY(0); }
+}
+
+@keyframes lb-wave2 {
+  0%   { transform: translateX(0) translateY(0); }
+  50%  { transform: translateX(25%) translateY(-3px); }
+  100% { transform: translateX(50%) translateY(0); }
+}
+
+@keyframes lb-done-flash {
+  0%   { box-shadow: 0 0 0px var(--accent-glow); }
+  50%  { box-shadow: 0 0 24px var(--accent-glow); }
+  100% { box-shadow: 0 0 8px var(--accent-glow); }
+}
+
+@keyframes lb-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ── Base ───────────────────────────────── */
+.liquid-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--accent);
+  border-radius: 999px;
+  font-family: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  overflow: hidden;
+  background: transparent;
+  color: #fff;
+  transition: border-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Sizes */
+.lb-sm { padding: 6px 14px;  font-size: 12px; }
+.lb-md { padding: 9px 20px;  font-size: 13px; }
+.lb-lg { padding: 12px 28px; font-size: 15px; }
+
+/* ── Fondo sólido (idle / done) ─────────── */
+.lb-bg {
+  position: absolute;
+  inset: 0;
+  background: var(--accent);
+  border-radius: inherit;
+  transition: opacity 0.35s ease;
+  z-index: 0;
+}
+
+/* Ocultar fondo cuando carga */
+.lb-loading .lb-bg { opacity: 0; }
+.lb-done    .lb-bg { opacity: 1; background: var(--accent-dim); }
+
+/* ── Líquido ────────────────────────────── */
+.lb-liquid {
+  position: absolute;
+  bottom: 0;
+  left: -10%;
+  width: 120%;
+  height: 0%;
+  background: var(--accent);
+  opacity: 0.92;
+  z-index: 1;
+  transition: height 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 40% 40% 0 0;
+}
+
+/* Ola principal */
+.lb-liquid::before {
+  content: '';
+  position: absolute;
+  top: -16px;
+  left: 0;
+  width: 200%;
+  height: 30px;
+  background: var(--accent);
+  opacity: 0.92;
+  border-radius: 45%;
+  animation: lb-wave 1.5s linear infinite;
+}
+
+/* Ola secundaria (más clara, sentido contrario) */
+.lb-liquid::after {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: 0;
+  width: 200%;
+  height: 22px;
+  background: var(--accent-bright);
+  opacity: 0.55;
+  border-radius: 42%;
+  animation: lb-wave2 2.2s linear infinite;
+}
+
+/* Ocultar líquido cuando no está cargando */
+.liquid-btn:not(.lb-loading) .lb-liquid {
+  height: 0% !important;
+  transition: height 0.3s ease;
+}
+
+/* ── Label ──────────────────────────────── */
+.lb-label {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ── Estados ────────────────────────────── */
+.liquid-btn:not(.lb-loading):not(.lb-done):not(:disabled):hover {
+  transform: translateY(-2px);
+  box-shadow: 0 0 20px var(--accent-glow);
+}
+
+.liquid-btn:not(.lb-loading):not(.lb-done):active {
+  transform: scale(0.96);
+}
+
+.lb-loading {
+  cursor: wait;
+  border-color: var(--accent-bright);
+  box-shadow: 0 0 12px var(--accent-glow);
+}
+
+.lb-done {
+  animation: lb-done-flash 0.5s ease;
+  border-color: var(--accent-dim);
+}
+
+.liquid-btn:disabled:not(.lb-loading):not(.lb-done) {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Spinner ────────────────────────────── */
+.lb-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: lb-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
