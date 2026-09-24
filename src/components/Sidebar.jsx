@@ -154,7 +154,7 @@ export default function Sidebar({ activeView, setActiveView }) {
             }
           </svg>
         </button>
-        {!collapsed && <span className="sidebar-version">v1.0</span>}
+        {!collapsed && <span className="sidebar-version">v1.1</span>}
       </div>
     </aside>
   )

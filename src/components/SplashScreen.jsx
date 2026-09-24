@@ -111,7 +111,7 @@ export default function SplashScreen({ onDone }) {
       </div>
 
       {/* Versión */}
-      <span className="splash-version">v1.0.0</span>
+      <span className="splash-version">v1.1.0</span>
     </div>
   )
 }
