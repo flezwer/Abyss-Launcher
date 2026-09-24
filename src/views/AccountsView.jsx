@@ -86,28 +86,14 @@ export default function AccountsView({ accounts, activeAccount, setActiveAccount
     setMsError('')
     const res = await window.eclipse.msAuthStart()
     if (!res.ok) { setMsStep('error'); setMsError(res.error); return }
-    setMsCode({ userCode: res.userCode, verificationUri: res.verificationUri })
-    setMsStep('waiting')
-    window.eclipse.openExternal(res.verificationUri)
-
-    const interval = (res.interval || 5) * 1000
-    pollRef.current = setInterval(async () => {
-      const poll = await window.eclipse.msAuthPoll()
-      if (poll.status === 'pending') return
-      clearInterval(pollRef.current)
-      if (poll.status === 'error') {
-        setMsStep('error')
-        setMsError(poll.error)
-        return
-      }
-      // success
-      const next = [...accounts, poll.account]
+    if (res.account) {
+      const next = [...accounts, res.account]
       saveAccounts(next)
-      setActiveAccount(poll.account)
+      setActiveAccount(res.account)
       setMsStep('idle')
       setMsCode(null)
       setMode(null)
-    }, interval)
+    }
   }
 
   const addOffline = () => {

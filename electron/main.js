@@ -5,100 +5,9 @@ const http = require('http')
 
 const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged
 
-// ── Microsoft / Xbox / Minecraft auth ────────────────────────────────────────
-const MS_CLIENT_ID = '00000000402b5328' // Xbox app client ID (usado por launchers de terceros)
-
-async function msDeviceCode() {
-  const body = new URLSearchParams({ client_id: MS_CLIENT_ID, scope: 'XboxLive.signin offline_access' })
-  const res = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/devicecode', {
-    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
-  })
-  return res.json()
-}
-
-async function msPollToken(deviceCode) {
-  const body = new URLSearchParams({
-    client_id: MS_CLIENT_ID,
-    grant_type: 'urn:ietf:params:oauth:grant-type:device_code',
-    device_code: deviceCode
-  })
-  const res = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/token', {
-    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
-  })
-  return res.json()
-}
-
-async function msRefreshMSToken(refreshToken) {
-  const body = new URLSearchParams({
-    client_id: MS_CLIENT_ID,
-    grant_type: 'refresh_token',
-    refresh_token: refreshToken
-  })
-  const res = await fetch('https://login.microsoftonline.com/consumers/oauth2/v2.0/token', {
-    method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body
-  })
-  return res.json()
-}
-
-async function msTokenToMinecraft(msAccessToken) {
-  // Xbox Live
-  const xblRes = await fetch('https://user.auth.xboxlive.com/user/authenticate', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      Properties: { AuthMethod: 'RPS', SiteName: 'user.auth.xboxlive.com', RpsTicket: `d=${msAccessToken}` },
-      RelyingParty: 'http://auth.xboxlive.com',
-      TokenType: 'JWT'
-    })
-  })
-  const xbl = await xblRes.json()
-
-  // XSTS
-  const xstsRes = await fetch('https://xsts.auth.xboxlive.com/xsts/authorize', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({
-      Properties: { SandboxId: 'RETAIL', UserTokens: [xbl.Token] },
-      RelyingParty: 'rp://api.minecraftservices.com/',
-      TokenType: 'JWT'
-    })
-  })
-  const xsts = await xstsRes.json()
-  if (xsts.XErr) {
-    const msgs = {
-      2148916233: 'No tienes cuenta de Xbox. Créala en xbox.com.',
-      2148916235: 'Xbox Live no está disponible en tu región.',
-      2148916238: 'Tu cuenta es de menor de edad y necesita una cuenta familiar.'
-    }
-    throw new Error(msgs[xsts.XErr] || `Error Xbox: ${xsts.XErr}`)
-  }
-  const uhs = xsts.DisplayClaims.xui[0].uhs
-
-  // Minecraft
-  const mcRes = await fetch('https://api.minecraftservices.com/authentication/login_with_xbox', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ identityToken: `XBL3.0 x=${uhs};${xsts.Token}` })
-  })
-  const mc = await mcRes.json()
-
-  // Perfil
-  const profRes = await fetch('https://api.minecraftservices.com/minecraft/profile', {
-    headers: { Authorization: `Bearer ${mc.access_token}` }
-  })
-  const profile = await profRes.json()
-  if (!profile.id) throw new Error('No se encontró perfil de Minecraft. ¿Tienes Minecraft comprado?')
-
-  return {
-    username: profile.name,
-    uuid: profile.id,
-    token: mc.access_token,
-    tokenExpiry: Date.now() + mc.expires_in * 1000
-  }
-}
-
-// Estado del device-code flow en curso
-let _msDeviceSession = null
+// ── Microsoft auth via msmc ───────────────────────────────────────────────────
+let _msmcAuth = null
+try { _msmcAuth = require('msmc') } catch {}
 
 let mainWindow
 
@@ -307,62 +216,52 @@ ipcMain.handle('accounts:save', (_, accounts) => {
   fs.writeFileSync(ACCOUNTS_FILE, JSON.stringify(safe, null, 2))
 })
 
-// ── Auth Microsoft ────────────────────────────────────────────────────────────
+// ── Auth Microsoft (msmc) ─────────────────────────────────────────────────────
 ipcMain.handle('auth:ms:start', async () => {
+  if (!_msmcAuth) return { ok: false, error: 'msmc no disponible' }
   try {
-    const data = await msDeviceCode()
-    if (data.error) return { ok: false, error: data.error_description || data.error }
-    _msDeviceSession = { deviceCode: data.device_code, interval: data.interval || 5 }
+    const { Auth } = _msmcAuth
+    const authManager = new Auth('select_account')
+    const xboxManager = await authManager.launch('electron', {
+      title: 'Abyss Launcher — Iniciar sesión con Microsoft',
+      icon: path.join(__dirname, '..', 'assets', 'icon.png')
+    })
+    const mc = await xboxManager.getMinecraft()
+    const profile = mc.profile
     return {
       ok: true,
-      userCode: data.user_code,
-      verificationUri: data.verification_uri,
-      expiresIn: data.expires_in,
-      interval: data.interval || 5
+      account: {
+        id: Date.now().toString(),
+        type: 'microsoft',
+        username: profile.name,
+        uuid: profile.id,
+        token: mc.mclc().auth,
+        tokenExpiry: Date.now() + 86400000,
+        refreshToken: xboxManager.msToken.refresh_token || '',
+        authData: mc.mclc()
+      }
     }
   } catch (e) {
     return { ok: false, error: e.message }
   }
 })
 
-ipcMain.handle('auth:ms:poll', async () => {
-  if (!_msDeviceSession) return { status: 'error', error: 'No hay sesión activa' }
-  try {
-    const data = await msPollToken(_msDeviceSession.deviceCode)
-    if (data.error === 'authorization_pending') return { status: 'pending' }
-    if (data.error === 'slow_down') return { status: 'pending' }
-    if (data.error) return { status: 'error', error: data.error_description || data.error }
+// poll ya no se necesita con msmc (el login es síncrono en la ventana)
+ipcMain.handle('auth:ms:poll', async () => ({ status: 'success' }))
 
-    const mcData = await msTokenToMinecraft(data.access_token)
-    _msDeviceSession = null
-    return {
-      status: 'success',
-      account: {
-        id: Date.now().toString(),
-        type: 'microsoft',
-        username: mcData.username,
-        uuid: mcData.uuid,
-        token: mcData.token,
-        tokenExpiry: mcData.tokenExpiry,
-        refreshToken: data.refresh_token
-      }
-    }
-  } catch (e) {
-    _msDeviceSession = null
-    return { status: 'error', error: e.message }
-  }
-})
-
-ipcMain.handle('auth:ms:refresh', async (_, { refreshToken, accountId }) => {
+ipcMain.handle('auth:ms:refresh', async (_, { refreshToken }) => {
+  if (!_msmcAuth) return { ok: false, error: 'msmc no disponible' }
   try {
-    const msData = await msRefreshMSToken(refreshToken)
-    if (msData.error) throw new Error(msData.error_description || msData.error)
-    const mcData = await msTokenToMinecraft(msData.access_token)
+    const { Auth } = _msmcAuth
+    const authManager = new Auth('select_account')
+    const xboxManager = await authManager.refresh(refreshToken)
+    const mc = await xboxManager.getMinecraft()
     return {
       ok: true,
-      token: mcData.token,
-      tokenExpiry: mcData.tokenExpiry,
-      refreshToken: msData.refresh_token || refreshToken
+      token: mc.mclc().auth,
+      tokenExpiry: Date.now() + 86400000,
+      refreshToken: xboxManager.msToken.refresh_token || refreshToken,
+      authData: mc.mclc()
     }
   } catch (e) {
     return { ok: false, error: e.message }
